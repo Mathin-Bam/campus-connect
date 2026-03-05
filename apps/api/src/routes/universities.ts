@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
       where: {
         active: true,
         ...(q && {
-          name: { contains: String(q) },
+          name: { contains: String(q), mode: 'insensitive' },
         }),
         ...(domain && {
           emailDomain: String(domain),

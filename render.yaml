@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: campus-connect-api
+    env: node
+    plan: free
+    buildCommand: "cd apps/api && pnpm install && pnpm build"
+    startCommand: "cd apps/api && pnpm start"
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+      - key: AWS_SES_REGION
+        value: us-east-1
+      - key: AWS_SES_FROM_EMAIL
+        value: noreply@campusconnect.com
+      - key: CLIENT_URL
+        sync: false
+
+databases:
+  - name: campus-connect-db
+    plan: free
+    ipAllowList: []
