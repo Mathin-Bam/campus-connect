@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String    @id @default(uuid())
+  firebaseUid             String    @unique @map("firebase_uid")
+  email                   String    @unique
+  displayName             String    @map("display_name") @db.VarChar(50)
+  avatarUrl               String?   @map("avatar_url")
+  universityId            String    @map("university_id")
+  verified                Boolean   @default(false)
+  pushToken               String?   @map("push_token")
+  notificationPreferences Json?     @map("notification_preferences")
+  lastActiveAt            DateTime? @map("last_active_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  deletedAt               DateTime? @map("deleted_at")
+  university              University @relation(fields: [universityId], references: [id])
+  activityStatuses        ActivityStatus[]
+  sentMessages            Message[]  @relation("SentMessages")
+  groupMemberships        GroupMember[]
+  followers               Follow[]   @relation("Following")
+  following               Follow[]   @relation("Follower")
+  blocksGiven             Block[]    @relation("Blocker")
+  blocksReceived          Block[]    @relation("Blocked")
+  reports                 Report[]   @relation("Reporter")
+  reportedBy              Report[]   @relation("Reported")
+  notifications           Notification[]
+
+  @@map("users")
+}
+
+model University {
+  id          String   @id @default(uuid())
+  name        String
+  emailDomain String   @unique @map("email_domain")
+  location    Unsupported("geography(Point,4326)")?
+  city        String?
+  country     String?
+  active      Boolean  @default(true)
+  users       User[]
+  groups      Group[]
+  chatRooms   ChatRoom[]
+  activityStatuses ActivityStatus[]
+
+  @@map("universities")
+}
+
+model ActivityStatus {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  universityId     String    @map("university_id")
+  activityType     String    @map("activity_type")
+  locationName     String    @map("location_name")
+  message          String?   @db.VarChar(120)
+  expiresAt        DateTime  @map("expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id])
+  university       University @relation(fields: [universityId], references: [id])
+
+  @@index([userId, expiresAt])
+  @@index([activityType, expiresAt])
+  @@map("activity_statuses")
+}
+
+model Group {
+  id           String    @id @default(uuid())
+  name         String    @db.VarChar(80)
+  description  String?
+  universityId String    @map("university_id")
+  activityType String?   @map("activity_type")
+  creatorId    String    @map("creator_id")
+  memberCount  Int       @default(0) @map("member_count")
+  isPrivate    Boolean   @default(false) @map("is_private")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  university   University @relation(fields: [universityId], references: [id])
+  members      GroupMember[]
+  chatRoom     ChatRoom?
+
+  @@map("groups")
+}
+
+model GroupMember {
+  groupId  String   @map("group_id")
+  userId   String   @map("user_id")
+  role     String   @default("member")
+  joinedAt DateTime @default(now()) @map("joined_at")
+  group    Group    @relation(fields: [groupId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@id([groupId, userId])
+  @@map("group_members")
+}
+
+model ChatRoom {
+  id            String    @id @default(uuid())
+  roomType      String    @map("room_type")
+  universityId  String    @map("university_id")
+  relatedGroupId String?  @map("related_group_id")
+  lastMessageAt DateTime? @map("last_message_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  university    University @relation(fields: [universityId], references: [id])
+  group         Group?    @relation(fields: [relatedGroupId], references: [id])
+  messages      Message[]
+
+  @@index([lastMessageAt])
+  @@map("chat_rooms")
+}
+
+model Message {
+  id        String    @id @default(uuid())
+  roomId    String    @map("room_id")
+  senderId  String    @map("sender_id")
+  content   String
+  type      String    @default("text")
+  readBy    Json?     @map("read_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+  room      ChatRoom  @relation(fields: [roomId], references: [id])
+  sender    User      @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([roomId, createdAt(sort: Desc)])
+  @@map("messages")
+}
+
+model Follow {
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+  following   User     @relation("Following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model Block {
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id])
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id])
+
+  @@id([blockerId, blockedId])
+  @@map("blocks")
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  reporterId     String   @map("reporter_id")
+  reportedUserId String   @map("reported_user_id")
+  reason         String
+  status         String   @default("pending")
+  createdAt      DateTime @default(now()) @map("created_at")
+  reporter       User     @relation("Reporter", fields: [reporterId], references: [id])
+  reportedUser   User     @relation("Reported", fields: [reportedUserId], references: [id])
+
+  @@map("reports")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  type        String
+  payload     Json
+  fcmMessageId String? @map("fcm_message_id")
+  opened      Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}

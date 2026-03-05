@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: monorepo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: monorepo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - monorepo-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: monorepo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - monorepo-network
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: monorepo-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/monorepo?schema=public
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+      - ./apps/api/prisma:/app/prisma
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - monorepo-network
+    command: pnpm dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  monorepo-network:
+    driver: bridge
