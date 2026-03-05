@@ -26,3 +26,4 @@ export async function upstashRestCommand(command: string, ...args: string[]) {
 }
 
 export default upstashRedis;
+export const redis = upstashRedis;

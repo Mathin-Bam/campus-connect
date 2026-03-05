@@ -1,6 +1,7 @@
-import { env } from './config/env';
-import { supabase } from './config/supabase';
-import { upstashRedis } from './config/upstash';
+import 'dotenv/config';
+import { validateEnv } from './config/env';
+validateEnv();
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -8,94 +9,53 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
-import Redis from 'ioredis';
-import { z } from 'zod';
-
-dotenv.config();
+import { redis } from './config/upstash';
+import { prisma } from './config/database';
+import universitiesRouter from './routes/universities';
+import authRouter from './routes/auth';
+import usersRouter from './routes/users';
 
 const app = express();
-const server = createServer(app);
+const httpServer = createServer(app);
 
-// Initialize Redis clients for Socket.io adapter using Upstash
-const pubClient = upstashRedis.duplicate();
-const subClient = upstashRedis.duplicate();
-
-// Initialize Socket.io with Redis adapter
-const io = new Server(server, {
-  cors: {
-    origin: env.CLIENT_URL,
-    methods: ['GET', 'POST'],
-  },
-  adapter: createAdapter(pubClient, subClient),
+const io = new Server(httpServer, {
+  cors: { origin: process.env.CLIENT_URL || '*', methods: ['GET', 'POST'] },
 });
 
-// Initialize clients
-const redis = upstashRedis;
+// Redis adapter for horizontal scaling
+const pubClient = redis.duplicate ? redis.duplicate() : redis;
+const subClient = redis.duplicate ? redis.duplicate() : redis;
+io.adapter(createAdapter(pubClient as any, subClient as any));
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
 app.use(morgan('combined'));
 app.use(express.json());
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-  const timestamp = new Date().toISOString();
-  
-  // Check database connection
-  let db = false;
-  try {
-    const { data, error } = await supabase.from('universities').select('id').limit(1);
-    db = !error;
-  } catch (error) {
-    console.error('Database health check failed:', error);
-    db = false;
-  }
+// Routes
+app.use('/api/universities', universitiesRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
 
-  // Check Redis connection
-  let redisStatus = false;
+// Health check
+app.get('/api/health', async (req, res) => {
+  let dbOk = false;
+  let redisOk = false;
   try {
-    const result = await redis.ping();
-    redisStatus = result === 'PONG';
-  } catch (error) {
-    console.error('Redis health check failed:', error);
-    redisStatus = false;
-  }
-
-  res.json({
-    status: 'ok',
-    db,
-    redis: redisStatus,
-    timestamp,
-  });
+    await prisma.$queryRaw`SELECT 1`;
+    dbOk = true;
+  } catch {}
+  try {
+    await redis.ping();
+    redisOk = true;
+  } catch {}
+  res.json({ status: 'ok', db: dbOk, redis: redisOk, timestamp: new Date().toISOString() });
 });
 
-// Socket.io connection
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-
-  socket.on('join-room', (roomId: string) => {
-    socket.join(roomId);
-    socket.to(roomId).emit('user-joined', socket.id);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-});
-
-const PORT = env.PORT;
-
-server.listen(PORT, () => {
+const PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await redis.quit();
-  await pubClient.quit();
-  await subClient.quit();
-  process.exit(0);
-});
+export { io };

@@ -6,41 +6,11 @@ async function main() {
   console.log('Seeding universities...');
 
   const universities = [
-    {
-      name: 'Massachusetts Institute of Technology',
-      emailDomain: 'mit.edu',
-      city: 'Cambridge',
-      country: 'USA',
-      active: true,
-    },
-    {
-      name: 'Stanford University',
-      emailDomain: 'stanford.edu',
-      city: 'Stanford',
-      country: 'USA',
-      active: true,
-    },
-    {
-      name: 'BRAC University',
-      emailDomain: 'bracu.ac.bd',
-      city: 'Dhaka',
-      country: 'Bangladesh',
-      active: true,
-    },
-    {
-      name: 'University of Oxford',
-      emailDomain: 'ox.ac.uk',
-      city: 'Oxford',
-      country: 'UK',
-      active: true,
-    },
-    {
-      name: 'North South University',
-      emailDomain: 'northsouth.edu',
-      city: 'Dhaka',
-      country: 'Bangladesh',
-      active: true,
-    },
+    { name: 'MIT', emailDomain: 'mit.edu', city: 'Cambridge', country: 'USA' },
+    { name: 'Stanford University', emailDomain: 'stanford.edu', city: 'Stanford', country: 'USA' },
+    { name: 'UCLA', emailDomain: 'ucla.edu', city: 'Los Angeles', country: 'USA' },
+    { name: 'University of Oxford', emailDomain: 'ox.ac.uk', city: 'Oxford', country: 'UK' },
+    { name: 'University of Cambridge', emailDomain: 'cam.ac.uk', city: 'Cambridge', country: 'UK' },
   ];
 
   for (const university of universities) {
