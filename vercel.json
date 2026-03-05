@@ -14,10 +14,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "apps/api/src/index.ts": {
-      "maxDuration": 10
-    }
   }
 }
