@@ -8,9 +8,12 @@ const envSchema = z.object({
   AWS_SES_REGION: z.string().min(1, 'AWS_SES_REGION is required'),
   AWS_SES_FROM_EMAIL: z.string().email('AWS_SES_FROM_EMAIL must be a valid email'),
   FCM_SERVER_KEY: z.string().min(1, 'FCM_SERVER_KEY is required'),
-  PORT: z.string().transform(Number).default('3000'),
+  PORT: z.string().transform(Number).default('3001'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CLIENT_URL: z.string().default('http://localhost:3000'),
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
