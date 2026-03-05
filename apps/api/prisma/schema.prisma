@@ -6,20 +6,20 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = "postgresql://postgres:campusconnectpleas@db.ljdrjevltndursngxahj.supabase.co:5432/postgres"
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
   id                      String    @id @default(uuid())
   firebaseUid             String    @unique @map("firebase_uid")
   email                   String    @unique
-  displayName             String    @map("display_name") @db.VarChar(50)
+  displayName             String    @map("display_name")
   avatarUrl               String?   @map("avatar_url")
   universityId            String    @map("university_id")
   verified                Boolean   @default(false)
   pushToken               String?   @map("push_token")
-  notificationPreferences Json?     @map("notification_preferences")
+  notificationPreferences String? @map("notification_preferences")
   lastActiveAt            DateTime? @map("last_active_at")
   createdAt               DateTime  @default(now()) @map("created_at")
   deletedAt               DateTime? @map("deleted_at")
@@ -42,7 +42,7 @@ model University {
   id          String   @id @default(uuid())
   name        String
   emailDomain String   @unique @map("email_domain")
-  location    Unsupported("geography(Point,4326)")?
+  location    String?
   city        String?
   country     String?
   active      Boolean  @default(true)
@@ -60,7 +60,7 @@ model ActivityStatus {
   universityId     String    @map("university_id")
   activityType     String    @map("activity_type")
   locationName     String    @map("location_name")
-  message          String?   @db.VarChar(120)
+  message          String?
   expiresAt        DateTime  @map("expires_at")
   createdAt        DateTime  @default(now()) @map("created_at")
   user             User      @relation(fields: [userId], references: [id])
@@ -73,7 +73,7 @@ model ActivityStatus {
 
 model Group {
   id           String    @id @default(uuid())
-  name         String    @db.VarChar(80)
+  name         String
   description  String?
   universityId String    @map("university_id")
   activityType String?   @map("activity_type")
@@ -121,7 +121,7 @@ model Message {
   senderId  String    @map("sender_id")
   content   String
   type      String    @default("text")
-  readBy    Json?     @map("read_by")
+  readBy      String? @map("read_by")
   createdAt DateTime  @default(now()) @map("created_at")
   deletedAt DateTime? @map("deleted_at")
   room      ChatRoom  @relation(fields: [roomId], references: [id])
@@ -170,7 +170,7 @@ model Notification {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
   type        String
-  payload     Json
+  payload     String
   fcmMessageId String? @map("fcm_message_id")
   opened      Boolean  @default(false)
   createdAt   DateTime @default(now()) @map("created_at")
