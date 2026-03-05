@@ -1,8 +1,8 @@
 import * as admin from 'firebase-admin';
+import * as fs from 'fs';
+import { env } from './env';
 
-const serviceAccount = JSON.parse(
-  process.env.FIREBASE_SERVICE_ACCOUNT || '{}'
-);
+const serviceAccount = JSON.parse(fs.readFileSync(env.FIREBASE_SERVICE_ACCOUNT, 'utf8'));
 
 if (!admin.apps.length) {
   admin.initializeApp({
