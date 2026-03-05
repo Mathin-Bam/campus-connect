@@ -1,5 +1,6 @@
 import { env } from './config/env';
 import { supabase } from './config/supabase';
+import { upstashRedis } from './config/upstash';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -16,9 +17,9 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
-// Initialize Redis clients for Socket.io adapter
-const pubClient = new Redis(env.REDIS_URL);
-const subClient = pubClient.duplicate();
+// Initialize Redis clients for Socket.io adapter using Upstash
+const pubClient = upstashRedis.duplicate();
+const subClient = upstashRedis.duplicate();
 
 // Initialize Socket.io with Redis adapter
 const io = new Server(server, {
@@ -30,7 +31,7 @@ const io = new Server(server, {
 });
 
 // Initialize clients
-const redis = new Redis(env.REDIS_URL);
+const redis = upstashRedis;
 
 // Middleware
 app.use(helmet());
