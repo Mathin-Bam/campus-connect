@@ -1,37 +1,54 @@
 # Free Deployment Guide
 
-## 🚀 Recommended Stack: Vercel + Railway
+## 🚀 Recommended Stack: Vercel + Supabase + Upstash
 
 ### Why this combo?
 - **Vercel**: Free hosting for Node.js APIs, GitHub integration, CDN
-- **Railway**: Free PostgreSQL + Redis with persistent storage
+- **Supabase**: Free PostgreSQL database with built-in auth and real-time
+- **Upstash**: Free Redis with 10,000 commands/day
 - **Total Cost**: $0/month for development/small projects
 
 ---
 
 ## 📋 Step-by-Step Deployment
 
-### 1. Setup Railway (Database + Redis)
+### 1. Setup Supabase (Database)
 
-1. **Create Railway Account**
-   - Go to [railway.app](https://railway.app)
+1. **Create Supabase Account**
+   - Go to [supabase.com](https://supabase.com)
    - Sign up with GitHub
 
-2. **Create PostgreSQL Service**
-   - Click "New Project" → "Provision PostgreSQL"
-   - Note the connection URL from dashboard
+2. **Create New Project**
+   - Click "New Project"
+   - Choose organization
+   - Set project name: "campus-connect"
+   - Set database password
+   - Choose region closest to you
 
-3. **Create Redis Service**
-   - Click "Add Service" → "Provision Redis"
-   - Note the Redis URL from dashboard
+3. **Get Database URL**
+   - Go to Settings → Database
+   - Copy the "Connection string"
+   - Format: `postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres`
 
-4. **Environment Variables**
-   ```bash
-   DATABASE_URL="postgresql://postgres:password@host:port/railway"
-   REDIS_URL="redis://host:port"
-   ```
+4. **Run Migrations**
+   - Go to SQL Editor
+   - Run your Prisma schema or use migrations
 
-### 2. Setup Vercel (API)
+### 2. Setup Upstash (Redis)
+
+1. **Create Upstash Account**
+   - Go to [upstash.com](https://upstash.com)
+   - Sign up with GitHub
+
+2. **Create Redis Database**
+   - Click "Create Database"
+   - Choose region (same as Supabase if possible)
+   - Copy the Redis URL
+
+3. **Get Redis URL**
+   - Format: `redis://default:[YOUR-PASSWORD]@[YOUR-REDIS-URL]`
+
+### 3. Setup Vercel (API)
 
 1. **Create Vercel Account**
    - Go to [vercel.com](https://vercel.com)
@@ -49,16 +66,17 @@
    - Install Command: `pnpm install`
 
 4. **Environment Variables**
-   Add all required variables from Railway:
+   Add all required variables:
    ```
-   DATABASE_URL=your_railway_db_url
-   REDIS_URL=your_railway_redis_url
+   DATABASE_URL=your_supabase_connection_string
+   REDIS_URL=your_upstash_redis_url
    JWT_SECRET=your_jwt_secret
    NODE_ENV=production
    PORT=3001
+   CLIENT_URL=https://your-app.vercel.app
    ```
 
-### 3. Update API for Production
+### 4. Update API for Production
 
 1. **Update CORS origins**
    ```typescript
@@ -129,25 +147,31 @@
 - **Services**: PostgreSQL, Redis, Node.js
 - **Limitation**: Sleeps after 15min inactivity
 
-### Supabase + Vercel
-- **Supabase**: Free PostgreSQL + Auth + Storage
-- **Vercel**: API hosting
-- **Good for**: Apps needing built-in auth
-
-### PlanetScale + Vercel
+### PlanetScale + Upstash
 - **PlanetScale**: Free MySQL database
-- **Vercel**: API hosting
+- **Upstash**: Free Redis
 - **Good for**: MySQL preference
+
+### Neon + Upstash
+- **Neon**: Free PostgreSQL with branching
+- **Upstash**: Free Redis
+- **Good for**: Modern Postgres features
+
+### Railway Alternative: Northflank
+- **Free Tier**: 100 hours/month
+- **Services**: PostgreSQL, Redis, Node.js
+- **Good for**: Railway-like experience
 
 ---
 
 ## 🎯 Quick Start Commands
 
 ```bash
-# Deploy to Railway
-railway login
-railway init
-railway up
+# Deploy to Supabase
+# Use Supabase dashboard for migrations
+
+# Deploy to Upstash
+# Use Upstash dashboard for Redis setup
 
 # Deploy to Vercel
 vercel --prod
@@ -165,9 +189,10 @@ eas build --platform ios
 | Service | Free Tier | Limitations |
 |---------|------------|-------------|
 | Vercel | 100GB bandwidth/month | 10s function timeout |
-| Railway | $5 credit/month | Sleeps after inactivity |
+| Supabase | 500MB DB, 2GB bandwidth | 50k API calls/month |
+| Upstash | 10,000 commands/day | 256MB max memory |
 | Render | 750 hours/month | 15min sleep timeout |
-| Supabase | 500MB DB | 50k API calls/month |
+| Neon | 3GB DB, 1GB bandwidth | 1 branch limit |
 
 ---
 
@@ -204,7 +229,8 @@ jobs:
 ## 🚨 Important Notes
 
 1. **Environment Variables**: Never commit `.env` files
-2. **Database Migrations**: Run manually on Railway dashboard
-3. **Health Checks**: Railway uses `/health` endpoint
+2. **Database Migrations**: Use Supabase SQL Editor
+3. **Redis Setup**: Use Upstash dashboard for connection details
 4. **CORS**: Update origins for production domains
 5. **Monitoring**: Both platforms provide logs and metrics
+6. **Supabase Auth**: Consider using built-in auth instead of Firebase
