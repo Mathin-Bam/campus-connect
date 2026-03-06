@@ -1,8 +1,15 @@
 import * as admin from 'firebase-admin';
-import * as fs from 'fs';
 import { env } from './env';
 
-const serviceAccount = JSON.parse(fs.readFileSync(env.FIREBASE_SERVICE_ACCOUNT, 'utf8'));
+// Parse service account - handle both file path and direct JSON
+let serviceAccount: any;
+try {
+  // First try to parse as JSON directly
+  serviceAccount = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT);
+} catch (e) {
+  // If that fails, it might be a file path - but we should update env to contain JSON
+  throw new Error('FIREBASE_SERVICE_ACCOUNT must contain valid JSON content, not a file path');
+}
 
 if (!admin.apps.length) {
   admin.initializeApp({
