@@ -75,6 +75,9 @@ importers:
       morgan:
         specifier: ^1.10.0
         version: 1.10.1
+      prisma:
+        specifier: 5.19.1
+        version: 5.19.1
       socket.io:
         specifier: ^4.7.4
         version: 4.8.3
@@ -88,9 +91,6 @@ importers:
         specifier: ^3.22.4
         version: 3.25.76
     devDependencies:
-      prisma:
-        specifier: 5.19.1
-        version: 5.19.1
       tsx:
         specifier: ^4.7.1
         version: 4.21.0
@@ -2371,9 +2371,11 @@ packages:
 
   /@prisma/debug@5.19.1:
     resolution: {integrity: sha512-lAG6A6QnG2AskAukIEucYJZxxcSqKsMK74ZFVfCTOM/7UiyJQi48v6TQ47d6qKG3LbMslqOvnTX25dj/qvclGg==}
+    dev: false
 
   /@prisma/engines-version@5.19.1-2.69d742ee20b815d88e17e54db4a2a7a3b30324e3:
     resolution: {integrity: sha512-xR6rt+z5LnNqTP5BBc+8+ySgf4WNMimOKXRn6xfNRDSpHvbOEmd7+qAOmzCrddEc4Cp8nFC0txU14dstjH7FXA==}
+    dev: false
 
   /@prisma/engines@5.19.1:
     resolution: {integrity: sha512-kR/PoxZDrfUmbbXqqb8SlBBgCjvGaJYMCOe189PEYzq9rKqitQ2fvT/VJ8PDSe8tTNxhc2KzsCfCAL+Iwm/7Cg==}
@@ -2383,6 +2385,7 @@ packages:
       '@prisma/engines-version': 5.19.1-2.69d742ee20b815d88e17e54db4a2a7a3b30324e3
       '@prisma/fetch-engine': 5.19.1
       '@prisma/get-platform': 5.19.1
+    dev: false
 
   /@prisma/fetch-engine@5.19.1:
     resolution: {integrity: sha512-pCq74rtlOVJfn4pLmdJj+eI4P7w2dugOnnTXpRilP/6n5b2aZiA4ulJlE0ddCbTPkfHmOL9BfaRgA8o+1rfdHw==}
@@ -2390,11 +2393,13 @@ packages:
       '@prisma/debug': 5.19.1
       '@prisma/engines-version': 5.19.1-2.69d742ee20b815d88e17e54db4a2a7a3b30324e3
       '@prisma/get-platform': 5.19.1
+    dev: false
 
   /@prisma/get-platform@5.19.1:
     resolution: {integrity: sha512-sCeoJ+7yt0UjnR+AXZL7vXlg5eNxaFOwC23h0KvW1YIXUoa7+W2ZcAUhoEQBmJTW4GrFqCuZ8YSP0mkDa4k3Zg==}
     dependencies:
       '@prisma/debug': 5.19.1
+    dev: false
 
   /@protobufjs/aspromise@1.1.2:
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -7747,6 +7752,7 @@ packages:
       '@prisma/engines': 5.19.1
     optionalDependencies:
       fsevents: 2.3.3
+    dev: false
 
   /proc-log@4.2.0:
     resolution: {integrity: sha512-g8+OnU/L2v+wyiVK+D5fA34J7EH8jZ8DDlvwhRCMxmMj7UCBvxiO1mGeN+36JXIKF4zevU4kRBd8lVgG9vLelA==}
