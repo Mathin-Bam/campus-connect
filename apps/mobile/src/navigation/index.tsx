@@ -5,6 +5,7 @@ import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import UniversitySearchScreen from '../screens/onboarding/UniversitySearchScreen';
 import OTPScreen from '../screens/onboarding/OTPScreen';
 import ProfileSetupScreen from '../screens/onboarding/ProfileSetupScreen';
+import ActivityFeedScreen from '../screens/main/ActivityFeedScreen';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -39,6 +40,7 @@ export default function Navigation() {
         <Stack.Screen name="UniversitySearch" component={UniversitySearchScreen} />
         <Stack.Screen name="OTP" component={OTPScreen} />
         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+        <Stack.Screen name="MainTabs" component={ActivityFeedScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
