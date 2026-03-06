@@ -1,35 +1,38 @@
 {
   "expo": {
-    "name": "Monorepo Mobile",
-    "slug": "monorepo-mobile",
+    "name": "Campus Connect",
+    "slug": "campus-connect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0D2137"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.campusconnect.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Campus Connect uses your location to show nearby activity"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "backgroundColor": "#0D2137"
+      },
+      "package": "com.campusconnect.app",
+      "permissions": ["ACCESS_FINE_LOCATION"]
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-font"
     ],
-    "scheme": "monorepo-mobile"
+    "scheme": "campusconnect"
   }
 }
