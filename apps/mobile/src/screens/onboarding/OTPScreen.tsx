@@ -193,7 +193,7 @@ export default function OTPScreen({ navigation, route }: Props) {
         },
         body: JSON.stringify({
           email: email.toLowerCase().trim(),
-          otp: String(otp),
+          otp: otp.join(''),
         }),
       });
       clearTimeout(timeout);
