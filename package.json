@@ -2,6 +2,9 @@
   "name": "monorepo",
   "version": "1.0.0",
   "private": true,
+  "prisma": {
+    "schema": "apps/api/prisma/schema.prisma"
+  },
   "workspaces": [
     "apps/*"
   ],
