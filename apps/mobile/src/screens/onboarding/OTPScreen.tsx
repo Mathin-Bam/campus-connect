@@ -37,6 +37,7 @@ export default function OTPScreen({ navigation, route }: Props) {
   const [otpError, setOtpError] = useState(false);
   const [devOtp, setDevOtp] = useState<string>(''); // For dev testing display
   const [error, setError] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   const otpRefs = useRef<(TextInput | null)[]>([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -95,8 +96,10 @@ export default function OTPScreen({ navigation, route }: Props) {
   };
 
   const handleSendOTP = async () => {
-    if (!validateEmail()) return;
+    if (!validateEmail() || sendingOtp) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSendingOtp(true);
+    setError('');
     
     try {
       const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/auth/register', {
@@ -109,13 +112,18 @@ export default function OTPScreen({ navigation, route }: Props) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Failed'); return; }
+      setSendingOtp(false);
+      if (!res.ok) { 
+        setError(data.error || 'Failed to send OTP'); 
+        return; 
+      }
       if (data.otp) setDevOtp(String(data.otp)); // show OTP on screen for testing
       setStep('otp');
       startCountdown();
       setTimeout(() => otpRefs.current[0]?.focus(), 300);
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to send verification code');
+      setSendingOtp(false);
+      setError('Network error. Please try again.');
     }
   };
 
@@ -164,8 +172,15 @@ export default function OTPScreen({ navigation, route }: Props) {
   const handleVerify = async () => {
     const enteredOtp = otp.join('');
     if (enteredOtp.length < OTP_LENGTH) return;
+    if (isVerifying) return;
     setIsVerifying(true);
     setOtpError(false);
+    setError('');
+    
+    const timeout = setTimeout(() => {
+      setIsVerifying(false);
+      setError('Request timed out. Please try again.');
+    }, 15000);
 
     try {
       const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/auth/verify-otp', {
@@ -178,11 +193,17 @@ export default function OTPScreen({ navigation, route }: Props) {
           otp: String(otp),
         }),
       });
+      clearTimeout(timeout);
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Invalid OTP'); return; }
+      if (!res.ok) {
+        setError(data.error || 'Invalid OTP. Try again.');
+        setIsVerifying(false);
+        return;
+      }
       
       // Success - navigate to ProfileSetup
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setIsVerifying(false);
       
       // TODO: Sign in to Firebase with custom token
       // For now, navigate to ProfileSetup
@@ -193,9 +214,10 @@ export default function OTPScreen({ navigation, route }: Props) {
         token: data.customToken || data.token || '',
       });
     } catch (error: any) {
-      setOtpError(true);
+      clearTimeout(timeout);
       setIsVerifying(false);
-      setError(error.message || 'Verification failed');
+      setError('Network error. Check your connection.');
+      setOtpError(true);
       // Shake animation on error
       Animated.sequence([
         Animated.timing(shakeAnim, {
@@ -298,19 +320,27 @@ export default function OTPScreen({ navigation, route }: Props) {
                   </Text>
                 </View>
 
+                {error && (
+                  <View style={s.errorBox}>
+                    <Text style={s.errorText}>{error}</Text>
+                  </View>
+                )}
+
                 <Animated.View style={{ transform: [{ scale: btnScale }], marginTop: 32 }}>
                   <TouchableOpacity
                     onPressIn={pressIn}
                     onPressOut={pressOut}
                     onPress={handleSendOTP}
                     activeOpacity={1}
-                    disabled={!email.includes('@')}
+                    disabled={!email.includes('@') || sendingOtp}
                   >
                     <LinearGradient
-                      colors={email.includes('@') ? ['#1B6CA8', '#0D4A7A'] : ['#1a2a3a', '#1a2a3a']}
+                      colors={email.includes('@') && !sendingOtp ? ['#1B6CA8', '#0D4A7A'] : ['#1a2a3a', '#1a2a3a']}
                       style={s.primaryBtn}
                     >
-                      <Text style={s.primaryBtnText}>Send verification code →</Text>
+                      <Text style={s.primaryBtnText}>
+                        {sendingOtp ? 'Sending...' : 'Send verification code →'}
+                      </Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 </Animated.View>
@@ -573,5 +603,17 @@ const s = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255,193,7,0.7)',
     fontWeight: '500',
+  },
+  errorBox: {
+    marginHorizontal: 24,
+    padding: 12,
+    backgroundColor: 'rgba(231,76,60,0.15)',
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
