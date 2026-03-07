@@ -159,6 +159,10 @@ export default function ActivityFeedScreen({ navigation }: any) {
   }, [idToken]);
 
   const handleSayHi = async (targetUserId: string, targetUserName: string) => {
+    if (!targetUserId) { 
+      console.log('No targetUserId'); 
+      return; 
+    }
     try {
       const data = await apiFetch('/api/chat/initiate', {
         method: 'POST',
@@ -169,8 +173,8 @@ export default function ActivityFeedScreen({ navigation }: any) {
         otherUser: { id: targetUserId, displayName: targetUserName },
       };
       (navigation.navigate as any)('MessageScreen', params);
-    } catch (e) {
-      console.log('Chat initiate error:', e);
+    } catch (e: any) {
+      console.log('Chat initiate error:', e.message);
     }
   };
 
@@ -280,9 +284,10 @@ export default function ActivityFeedScreen({ navigation }: any) {
         <FlatList
           data={filtered}
           keyExtractor={item => item.id}
-          renderItem={({ item, index }) => (
-            <ActivityCard item={item} index={index} onSayHi={handleSayHi} />
-          )}
+          renderItem={({ item, index }) => {
+            console.log('FEED ITEM:', JSON.stringify(item, null, 2));
+            return <ActivityCard item={item} index={index} onSayHi={handleSayHi} />;
+          }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.listContent}
           refreshControl={
@@ -458,7 +463,10 @@ function ActivityCard({ item, index, onSayHi }: {
             <View style={s.cardFooter}>
               <TouchableOpacity 
                 style={[s.joinBtn, { borderColor: item.color + '66' }]}
-                onPress={() => onSayHi(item.user.id, item.user.displayName)}
+                onPress={() => onSayHi(
+                  item.user?.id || item.userId || 'unknown', 
+                  item.user?.displayName || item.name || 'Unknown'
+                )}
               >
                 <Text style={[s.joinBtnText, { color: item.color }]}>
                   Say hi 👋

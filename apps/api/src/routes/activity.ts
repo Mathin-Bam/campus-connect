@@ -99,8 +99,14 @@ router.get('/feed', requireAuth, async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Filter out blocked users (you'll need to implement this logic)
-    const filteredStatuses = statuses.filter((status: any) => status.user.id !== user.id);
+    // Filter out current user and ensure flat userId field
+    const filteredStatuses = statuses
+      .filter((status: any) => status.user.id !== user.id)
+      .map((status: any) => ({
+        ...status,
+        userId: status.user.id, // ensure flat field exists
+        userName: status.user.displayName,
+      }));
 
     res.json({ feed: filteredStatuses });
   } catch (error) {
