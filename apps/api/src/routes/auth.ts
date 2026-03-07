@@ -37,25 +37,21 @@ router.post('/register', async (req, res) => {
   try {
     const { email, universityId, displayName } = req.body;
     if (!email || !universityId || !displayName) {
-      res.status(400).json({ error: 'email, universityId and displayName are required' });
-      return;
+      return res.status(400).json({ error: 'email, universityId and displayName are required' });
     }
     const university = await prisma.university.findUnique({
       where: { id: universityId },
     });
     if (!university) {
-      res.status(400).json({ error: 'University not found' });
-      return;
+      return res.status(400).json({ error: 'University not found' });
     }
     const emailDomain = email.split('@')[1];
     if (emailDomain !== university.emailDomain) {
-      res.status(400).json({ error: `Email must end with @${university.emailDomain}` });
-      return;
+      return res.status(400).json({ error: `Email must end with @${university.emailDomain}` });
     }
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      res.status(409).json({ error: 'Email already registered' });
-      return;
+      return res.status(409).json({ error: 'Email already registered' });
     }
     let firebaseUser;
     try {
@@ -77,14 +73,14 @@ router.post('/register', async (req, res) => {
     });
     // TODO Sprint 4: Send OTP via AWS SES email
     // For now returning OTP in response for testing
-    res.status(201).json({
+    return res.status(201).json({
       message: 'OTP sent to email',
       userId: user.id,
       otp, // REMOVE THIS IN PRODUCTION
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    return res.status(500).json({ error: 'Registration failed' });
   }
 });
 
@@ -111,10 +107,10 @@ router.post('/verify-otp', async (req, res) => {
     });
     const firebaseUser = await auth.getUserByEmail(email);
     const customToken = await auth.createCustomToken(firebaseUser.uid);
-    res.json({ customToken, message: 'Email verified successfully' });
+    return res.json({ customToken, message: 'Email verified successfully' });
   } catch (error) {
     console.error('Verify OTP error:', error);
-    res.status(500).json({ error: 'Verification failed' });
+    return res.status(500).json({ error: 'Verification failed' });
   }
 });
 
@@ -126,12 +122,11 @@ router.get('/me', requireAuth, async (req, res) => {
       include: { university: true },
     });
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
+      return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+    return res.json(user);
   } catch {
-    res.status(500).json({ error: 'Failed to fetch user' });
+    return res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
@@ -146,10 +141,10 @@ router.patch('/users/profile', requireAuth, async (req, res) => {
         ...(avatarUrl && { avatarUrl }),
       },
     });
-    res.json(user);
+    return res.json(user);
   } catch (error) {
     console.error('Profile update error:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+    return res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
