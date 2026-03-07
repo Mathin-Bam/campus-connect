@@ -68,7 +68,7 @@ router.post('/register', async (req, res) => {
     }
     const otp = String(Math.floor(100000 + Math.random() * 900000))
     const otpKey = `otp:${email.toLowerCase().trim()}` 
-    await redis.set(otpKey, otp, { ex: 600 })
+    await redis.set(otpKey, otp, { ex: 3600 })
     const user = await prisma.user.create({
       data: {
         firebaseUid: firebaseUser.uid,
@@ -100,11 +100,10 @@ router.post('/verify-otp', async (req, res) => {
       return;
     }
     const otpKey = `otp:${email.toLowerCase().trim()}` 
+    console.log('VERIFY REQUEST - email:', email, 'otp received:', otp, typeof otp);
     const storedOtp = await redis.get<string>(otpKey)
-    console.log('DEBUG verify - key:', otpKey)
-    console.log('DEBUG verify - storedOtp:', storedOtp, typeof storedOtp)
-    console.log('DEBUG verify - receivedOtp:', otp, typeof otp)
-    console.log('DEBUG verify - match:', String(storedOtp) === String(otp))
+    console.log('VERIFY - stored otp:', storedOtp, typeof storedOtp);
+    console.log('VERIFY - match:', String(storedOtp) === String(otp));
     if (!storedOtp) return res.status(400).json({ error: 'OTP expired' })
     if (String(storedOtp) !== String(otp)) return res.status(400).json({ error: 'Invalid OTP' })
     await redis.del(otpKey)

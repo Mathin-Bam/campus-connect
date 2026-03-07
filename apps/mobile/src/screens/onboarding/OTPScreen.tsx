@@ -182,6 +182,9 @@ export default function OTPScreen({ navigation, route }: Props) {
       setError('Request timed out. Please try again.');
     }, 15000);
 
+    console.log('SENDING VERIFY - email:', email.toLowerCase().trim());
+    console.log('SENDING VERIFY - otp:', otp, 'length:', String(otp).length);
+
     try {
       const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/auth/verify-otp', {
         method: 'POST',
