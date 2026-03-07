@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
 import { io, Socket } from 'socket.io-client';
 import SimpleStatusSheet from '../../components/StatusBottomSheet';
+import ProfileDropdown from '../../components/ProfileDropdown';
 import { API_URL } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../config/apiClient';
@@ -32,9 +33,11 @@ const FILTERS = [
 
 export default function ActivityFeedScreen() {
   const { idToken, user: currentUser } = useAuth();
+  const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [statusVisible, setStatusVisible] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [feedItems, setFeedItems] = useState<any[]>([
     {
       id: '1',
@@ -243,9 +246,9 @@ export default function ActivityFeedScreen() {
               {' '}active on campus
             </Text>
           </View>
-          <TouchableOpacity style={s.avatarBtn}>
+          <TouchableOpacity style={s.avatarBtn} onPress={() => setShowProfile(true)}>
             <LinearGradient colors={['#1B6CA8', '#0D3060']} style={s.headerAvatar}>
-              <Text style={s.headerAvatarText}>MA</Text>
+              <Text style={s.headerAvatarText}>{(currentUser?.displayName || 'MA')[0]}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -305,6 +308,13 @@ export default function ActivityFeedScreen() {
           }
         />
       </SafeAreaView>
+
+      {/* Profile Dropdown */}
+      <ProfileDropdown
+        visible={showProfile}
+        onClose={() => setShowProfile(false)}
+        navigation={navigation}
+      />
 
       {/* FAB — Set Status */}
       <Animated.View

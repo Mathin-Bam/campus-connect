@@ -1,8 +1,25 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/requireAuth';
+import bcrypt from 'bcryptjs';
 
 const router: Router = Router();
+
+// POST /api/users/set-password
+router.post('/set-password', requireAuth, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    const hash = await bcrypt.hash(password, 10);
+    await prisma.user.update({
+      where: { id: (req as any).user.id },
+      data: { passwordHash: hash },
+    });
+    res.json({ message: 'Password set successfully' });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // GET /api/users/me - full profile
 router.get('/me', requireAuth, async (req, res) => {

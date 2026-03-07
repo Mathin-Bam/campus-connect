@@ -26,6 +26,7 @@ model User {
   createdAt               DateTime  @default(now()) @map("created_at")
   deletedAt               DateTime? @map("deleted_at")
   profileId               String   @unique @default(cuid())
+  passwordHash            String?  @map("password_hash")
   university              University @relation(fields: [universityId], references: [id])
   activityStatuses        ActivityStatus[]
   sentMessages            Message[]  @relation("SentMessages")

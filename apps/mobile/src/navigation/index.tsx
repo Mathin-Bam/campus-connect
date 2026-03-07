@@ -10,6 +10,7 @@ import ProfileSetupScreen from '../screens/onboarding/ProfileSetupScreen';
 import ActivityFeedScreen from '../screens/main/ActivityFeedScreen';
 import ChatListScreen from '../screens/main/ChatListScreen';
 import MessageScreen from '../screens/main/MessageScreen';
+import SettingsScreen from '../screens/main/SettingsScreen';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -37,6 +38,7 @@ export type RootStackParamList = {
       avatarUrl?: string;
     };
   };
+  Settings: undefined;
 };
 
 const Stack = createStackNavigator();
@@ -60,6 +62,7 @@ export default function AppNavigator() {
             <Stack.Screen name="ActivityFeed" component={ActivityFeedScreen} />
             <Stack.Screen name="ChatList" component={ChatListScreen} />
             <Stack.Screen name="MessageScreen" component={MessageScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         )}
       </Stack.Navigator>
