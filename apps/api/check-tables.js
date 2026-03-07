@@ -3,17 +3,15 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function check() {
-  try {
-    const users = await prisma.user.count();
-    const unis = await prisma.university.count();
-    const statuses = await prisma.activityStatus.count();
-    const threads = await prisma.chatThread.count();
-    console.log('users:', users, 'universities:', unis, 'statuses:', statuses, 'threads:', threads);
-  } catch(e) {
-    console.log('TABLE ERROR:', e.message);
-  } finally {
-    await prisma.$disconnect();
-  }
+  const counts = {
+    users:            await prisma.user.count(),
+    universities:     await prisma.university.count(),
+    activityStatuses: await prisma.activityStatus.count(),
+    chatThreads:      await prisma.chatThread.count(),
+    messages:         await prisma.message.count(),
+  };
+  console.log('ALL TABLES OK:', JSON.stringify(counts));
+  await prisma.$disconnect();
 }
 
-check();
+check().catch(e => console.log('TABLE ERROR:', e.message));
