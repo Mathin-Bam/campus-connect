@@ -38,9 +38,24 @@ export type RootStackParamList = {
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+const linking = {
+  prefixes: ['http://localhost:8081', 'https://campus-connect.app'],
+  config: {
+    screens: {
+      Welcome: '',
+      UniversitySearch: 'university',
+      OTP: 'otp',
+      ProfileSetup: 'profile',
+      MainTabs: 'feed',
+      ChatList: 'chats',
+      MessageScreen: 'chat/:threadId',
+    },
+  },
+};
+
 export default function Navigation() {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
