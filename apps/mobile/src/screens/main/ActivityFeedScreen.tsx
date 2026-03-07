@@ -18,78 +18,6 @@ import { io, Socket } from 'socket.io-client';
 import SimpleStatusSheet from '../../components/StatusBottomSheet';
 import { API_URL } from '../../config/api';
 
-    name: 'Omar K.',
-    initials: 'OK',
-    activity: 'Studying',
-    activityId: 'study',
-    emoji: '📚',
-    location: 'Main Library',
-    message: 'anyone want to study algorithms together?',
-    minutesAgo: 2,
-    color: '#3498DB',
-  },
-  {
-    id: '2',
-    name: 'Sarah M.',
-    initials: 'SM',
-    activity: 'At the Gym',
-    activityId: 'gym',
-    emoji: '💪',
-    location: 'Student Rec Center',
-    message: 'leg day 😤 anyone else here?',
-    minutesAgo: 5,
-    color: '#8E44AD',
-  },
-  {
-    id: '3',
-    name: 'James L.',
-    initials: 'JL',
-    activity: 'Getting Food',
-    activityId: 'food',
-    emoji: '🍔',
-    location: 'Campus Dining Hall',
-    message: 'pizza is back on the menu today!',
-    minutesAgo: 8,
-    color: '#F39C12',
-  },
-  {
-    id: '4',
-    name: 'Aisha R.',
-    initials: 'AR',
-    activity: 'Playing Sports',
-    activityId: 'sports',
-    emoji: '⚽',
-    location: 'North Field',
-    message: 'pickup football game, need 2 more people',
-    minutesAgo: 12,
-    color: '#E74C3C',
-  },
-  {
-    id: '5',
-    name: 'Dev P.',
-    initials: 'DP',
-    activity: 'Gaming',
-    activityId: 'gaming',
-    emoji: '🎮',
-    location: 'Student Lounge',
-    message: 'smash bros tournament starting soon',
-    minutesAgo: 15,
-    color: '#E67E22',
-  },
-  {
-    id: '6',
-    name: 'Lena W.',
-    initials: 'LW',
-    activity: 'Being Social',
-    activityId: 'social',
-    emoji: '🎉',
-    location: 'Campus Quad',
-    message: 'hanging outside, weather is perfect rn',
-    minutesAgo: 18,
-    color: '#1ABC9C',
-  },
-];
-
 const FILTERS = [
   { id: 'all', label: 'All', emoji: '⚡' },
   { id: 'study', label: 'Study', emoji: '📚' },
@@ -104,7 +32,7 @@ export default function ActivityFeedScreen() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [statusVisible, setStatusVisible] = useState(false);
-  const [feedItems, setFeedItems] = useState([]);
+  const [feedItems, setFeedItems] = useState<any[]>([]);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -151,93 +79,13 @@ export default function ActivityFeedScreen() {
   }, [userToken, currentUser]);
 
   useEffect(() => {
-    // Mock user data for now - replace with real auth
-    setCurrentUser({ id: 'mock_user_id', universityId: 'mock_university_id' });
-    setUserToken('mock_user_token');
     fetchFeed();
-  }, []);
+  }, [userToken]);
 
-  const handleSayHi = async (targetUserId: string, targetUser: any) => {
+  const handleSayHi = async (targetUserId: string, displayName: string) => {
     if (!userToken) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/chat/initiate`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ targetUserId }),
-      });
-      
-      if (response.ok) {
-        const { thread } = await response.json();
-        navigation.navigate('MessageScreen' as never, {
-          threadId: thread.id,
-          otherUser: targetUser,
-        });
-      } else {
-        console.error('Failed to initiate chat');
-      }
-    } catch (error) {
-      console.error('Error initiating chat:', error);
-    }
-  };
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const fabScale = useRef(new Animated.Value(1)).current;
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(headerAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
-    Animated.spring(fabAnim, {
-      toValue: 1,
-      tension: 50,
-      friction: 6,
-      delay: 400,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  const filtered = activeFilter === 'all'
-    ? MOCK_FEED
-    : MOCK_FEED.filter(item => item.activityId === activeFilter);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setRefreshing(false);
-  };
-
-  const handleFilterPress = async (id: string) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveFilter(id);
-  };
-
-  const handleFABPress = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.spring(fabScale, { toValue: 0.9, useNativeDriver: true, speed: 60 }),
-      Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, speed: 40 }),
-    ]).start();
-    setStatusVisible(true);
-  };
-
-  const handleStatusSubmit = (status: any) => {
-    console.log('Status set:', status);
-    setStatusVisible(false);
-  };
-
-  const navigation = useNavigation();
-
-  const handleSayHi = async (targetUserId: string, displayName: string) => {
-    try {
-      // For now, using placeholder token - you should get this from your auth state
-      const userToken = 'your_firebase_jwt_token'; // Replace with actual token retrieval
-      
       const response = await fetch(`${API_URL}/api/chat/initiate`, {
         method: 'POST',
         headers: {
@@ -265,6 +113,54 @@ export default function ActivityFeedScreen() {
     }
   };
 
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const fabScale = useRef(new Animated.Value(1)).current;
+  const fabAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(headerAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+    Animated.spring(fabAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 6,
+      delay: 400,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const filtered = activeFilter === 'all'
+    ? feedItems
+    : feedItems.filter(item => item.activityId === activeFilter);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await new Promise(r => setTimeout(r, 1200));
+    setRefreshing(false);
+  };
+
+  const handleFilterPress = async (id: string) => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveFilter(id);
+  };
+
+  const handleFABPress = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Animated.sequence([
+      Animated.spring(fabScale, { toValue: 0.9, useNativeDriver: true, speed: 60 }),
+      Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, speed: 40 }),
+    ]).start();
+    setStatusVisible(true);
+  };
+
+  const handleStatusSubmit = (status: any) => {
+    console.log('Status set:', status);
+    setStatusVisible(false);
+  };
+
   return (
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -281,7 +177,7 @@ export default function ActivityFeedScreen() {
           <View>
             <Text style={s.greeting}>Hey there 👋</Text>
             <Text style={s.subGreeting}>
-              <Text style={s.liveCount}>● {MOCK_FEED.length} people</Text>
+              <Text style={s.liveCount}>● {feedItems.length} people</Text>
               {' '}active on campus
             </Text>
           </View>
@@ -381,7 +277,7 @@ export default function ActivityFeedScreen() {
 }
 
 function ActivityCard({ item, index, onSayHi }: { 
-  item: typeof MOCK_FEED[0]; 
+  item: any; 
   index: number; 
   onSayHi: (targetUserId: string, displayName: string) => Promise<void>;
 }) {
@@ -494,7 +390,7 @@ function ActivityCard({ item, index, onSayHi }: {
             <View style={s.cardFooter}>
               <TouchableOpacity 
                 style={[s.joinBtn, { borderColor: item.color + '66' }]}
-                onPress={() => handleSayHi(item.id, item.name)}
+                onPress={() => onSayHi(item.id, item.name)}
               >
                 <Text style={[s.joinBtnText, { color: item.color }]}>
                   Say hi 👋

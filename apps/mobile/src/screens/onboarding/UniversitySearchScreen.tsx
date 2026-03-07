@@ -49,7 +49,7 @@ export default function UniversitySearchScreen({ navigation }: Props) {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/auth/universities?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`${API_URL}/api/universities?q=${encodeURIComponent(searchQuery)}`);
       const data = await response.json();
       setUniversities(data);
     } catch (error) {

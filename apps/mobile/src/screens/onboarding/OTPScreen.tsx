@@ -26,7 +26,6 @@ type Props = {
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
-const MOCK_OTP = '123456';
 
 export default function OTPScreen({ navigation, route }: Props) {
   const { university } = route.params;
@@ -96,9 +95,25 @@ export default function OTPScreen({ navigation, route }: Props) {
   const handleSendOTP = async () => {
     if (!validateEmail()) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setStep('otp');
-    startCountdown();
-    setTimeout(() => otpRefs.current[0]?.focus(), 300);
+    
+    try {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, universityId: university.id, displayName: email.split('@')[0] }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send OTP');
+      }
+      
+      setStep('otp');
+      startCountdown();
+      setTimeout(() => otpRefs.current[0]?.focus(), 300);
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to send verification code');
+    }
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -167,7 +182,7 @@ export default function OTPScreen({ navigation, route }: Props) {
         // TODO: Sign in to Firebase with custom token
         // For now, navigate to ProfileSetup
         navigation.navigate('ProfileSetup' as never, {
-          userId: 'mock_user_id',
+          userId: data.userId || data.uid || 'unknown',
           email: email,
         });
       } else {
@@ -368,10 +383,6 @@ export default function OTPScreen({ navigation, route }: Props) {
                   </TouchableOpacity>
                 </View>
 
-                {/* Dev hint */}
-                <View style={s.devHint}>
-                  <Text style={s.devHintText}>🧪 Dev mode: use code 123456</Text>
-                </View>
               </View>
             )}
           </Animated.View>

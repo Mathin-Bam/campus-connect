@@ -70,10 +70,8 @@ export default function ChatListScreen() {
   }, [userToken]);
 
   useEffect(() => {
-    // Mock user token for now - replace with real auth
-    setUserToken('mock_user_token');
     fetchThreads();
-  }, []);
+  }, [fetchThreads]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
