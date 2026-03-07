@@ -13,11 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import SimpleStatusSheet from '../../components/SimpleStatusSheet';
+import { useNavigation } from '@react-navigation/native';
+import { io, Socket } from 'socket.io-client';
+import SimpleStatusSheet from '../../components/StatusBottomSheet';
+import { API_URL } from '../../config/api';
 
-const MOCK_FEED = [
-  {
-    id: '1',
     name: 'Omar K.',
     initials: 'OK',
     activity: 'Studying',
@@ -104,6 +104,85 @@ export default function ActivityFeedScreen() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [statusVisible, setStatusVisible] = useState(false);
+  const [feedItems, setFeedItems] = useState([]);
+  const [userToken, setUserToken] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const navigation = useNavigation();
+
+  // Fetch feed from API
+  const fetchFeed = async () => {
+    if (!userToken) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/activity/feed`, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+      const data = await response.json();
+      setFeedItems(data.feed || []);
+    } catch (error) {
+      console.error('Feed fetch error:', error);
+    }
+  };
+
+  // Socket.io connection for real-time updates
+  useEffect(() => {
+    if (!userToken || !currentUser?.universityId) return;
+
+    const socket = io(API_URL);
+    
+    socket.emit('join_university', { universityId: currentUser.universityId });
+    
+    socket.on('status_updated', (update) => {
+      setFeedItems(prev => {
+        const exists = prev.find(i => i.userId === update.userId);
+        if (exists) {
+          return prev.map(i => i.userId === update.userId ? { ...i, ...update } : i);
+        }
+        return [update, ...prev];
+      });
+    });
+
+    socket.on('status_cleared', ({ userId }) => {
+      setFeedItems(prev => prev.filter(i => i.userId !== userId));
+    });
+
+    return () => socket.disconnect();
+  }, [userToken, currentUser]);
+
+  useEffect(() => {
+    // Mock user data for now - replace with real auth
+    setCurrentUser({ id: 'mock_user_id', universityId: 'mock_university_id' });
+    setUserToken('mock_user_token');
+    fetchFeed();
+  }, []);
+
+  const handleSayHi = async (targetUserId: string, targetUser: any) => {
+    if (!userToken) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/chat/initiate`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ targetUserId }),
+      });
+      
+      if (response.ok) {
+        const { thread } = await response.json();
+        navigation.navigate('MessageScreen' as never, {
+          threadId: thread.id,
+          otherUser: targetUser,
+        });
+      } else {
+        console.error('Failed to initiate chat');
+      }
+    } catch (error) {
+      console.error('Error initiating chat:', error);
+    }
+  };
   const headerAnim = useRef(new Animated.Value(0)).current;
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabAnim = useRef(new Animated.Value(0)).current;
@@ -150,6 +229,40 @@ export default function ActivityFeedScreen() {
   const handleStatusSubmit = (status: any) => {
     console.log('Status set:', status);
     setStatusVisible(false);
+  };
+
+  const navigation = useNavigation();
+
+  const handleSayHi = async (targetUserId: string, displayName: string) => {
+    try {
+      // For now, using placeholder token - you should get this from your auth state
+      const userToken = 'your_firebase_jwt_token'; // Replace with actual token retrieval
+      
+      const response = await fetch(`${API_URL}/api/chat/initiate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}`,
+        },
+        body: JSON.stringify({ targetUserId }),
+      });
+      
+      if (response.ok) {
+        const { thread } = await response.json();
+        navigation.navigate('MessageScreen' as never, {
+          threadId: thread.id,
+          otherUser: {
+            id: targetUserId,
+            displayName: displayName,
+            avatarUrl: undefined,
+          },
+        } as never);
+      } else {
+        console.error('Failed to initiate chat');
+      }
+    } catch (err) {
+      console.error('Failed to initiate chat:', err);
+    }
   };
 
   return (
@@ -211,7 +324,7 @@ export default function ActivityFeedScreen() {
           data={filtered}
           keyExtractor={item => item.id}
           renderItem={({ item, index }) => (
-            <ActivityCard item={item} index={index} />
+            <ActivityCard item={item} index={index} onSayHi={handleSayHi} />
           )}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.listContent}
@@ -267,7 +380,11 @@ export default function ActivityFeedScreen() {
   );
 }
 
-function ActivityCard({ item, index }: { item: typeof MOCK_FEED[0]; index: number }) {
+function ActivityCard({ item, index, onSayHi }: { 
+  item: typeof MOCK_FEED[0]; 
+  index: number; 
+  onSayHi: (targetUserId: string, displayName: string) => Promise<void>;
+}) {
   const entryAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -375,7 +492,10 @@ function ActivityCard({ item, index }: { item: typeof MOCK_FEED[0]; index: numbe
 
             {/* Join button */}
             <View style={s.cardFooter}>
-              <TouchableOpacity style={[s.joinBtn, { borderColor: item.color + '66' }]}>
+              <TouchableOpacity 
+                style={[s.joinBtn, { borderColor: item.color + '66' }]}
+                onPress={() => handleSayHi(item.id, item.name)}
+              >
                 <Text style={[s.joinBtnText, { color: item.color }]}>
                   Say hi 👋
                 </Text>

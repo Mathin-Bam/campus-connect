@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,14 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation';
+import { API_URL } from '../../config/api';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'UniversitySearch'>;
@@ -34,48 +36,43 @@ const MOCK_UNIVERSITIES = [
 
 export default function UniversitySearchScreen({ navigation }: Props) {
   const [query, setQuery] = useState('');
-  const [filtered, setFiltered] = useState(MOCK_UNIVERSITIES);
+  const [universities, setUniversities] = useState([]);
+  const [loading, setLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 60,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  const searchUniversities = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setUniversities([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/auth/universities?q=${encodeURIComponent(searchQuery)}`);
+      const data = await response.json();
+      setUniversities(data);
+    } catch (error) {
+      console.error('University search error:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (query.trim() === '') {
-      setFiltered(MOCK_UNIVERSITIES);
-    } else {
-      const q = query.toLowerCase();
-      setFiltered(
-        MOCK_UNIVERSITIES.filter(
-          u =>
-            u.name.toLowerCase().includes(q) ||
-            u.emailDomain.toLowerCase().includes(q) ||
-            u.city.toLowerCase().includes(q)
-        )
-      );
-    }
-  }, [query]);
+    const timeoutId = setTimeout(() => {
+      searchUniversities(query);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [query, searchUniversities]);
 
   const handleSelect = async (uni: typeof MOCK_UNIVERSITIES[0]) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate('OTP', { university: uni });
   };
 
-  const renderItem = ({ item, index }: { item: typeof MOCK_UNIVERSITIES[0]; index: number }) => (
+  const renderItem = ({ item, index }: { item: typeof universities[0]; index: number }) => (
     <UniCard
       item={item}
       index={index}
@@ -147,31 +144,43 @@ export default function UniversitySearchScreen({ navigation }: Props) {
               )}
             </View>
 
+            {/* Loading indicator */}
+            {loading && (
+              <View style={s.loadingContainer}>
+                <ActivityIndicator size="large" color="#1B6CA8" />
+                <Text style={s.loadingText}>Searching universities...</Text>
+              </View>
+            )}
+
             {/* Results count */}
-            <Text style={s.resultsCount}>
-              {filtered.length === MOCK_UNIVERSITIES.length
-                ? `${filtered.length} universities available` 
-                : `${filtered.length} result${filtered.length !== 1 ? 's' : ''} found`}
-            </Text>
+            {!loading && (
+              <Text style={s.resultsCount}>
+                {universities.length > 0
+                  ? `${universities.length} result${universities.length !== 1 ? 's' : ''} found`
+                  : 'No universities found'}
+              </Text>
+            )}
 
             {/* List */}
-            <FlatList
-              data={filtered}
-              keyExtractor={item => item.id}
-              renderItem={renderItem}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={
-                <View style={s.emptyState}>
-                  <Text style={s.emptyEmoji}>🔭</Text>
-                  <Text style={s.emptyTitle}>No universities found</Text>
-                  <Text style={s.emptySubtitle}>
-                    Try a different search term
-                  </Text>
-                </View>
-              }
-              contentContainerStyle={s.listContent}
-            />
+            {!loading && (
+              <FlatList
+                data={universities}
+                keyExtractor={item => item.id}
+                renderItem={renderItem}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                ListEmptyComponent={
+                  <View style={s.emptyState}>
+                    <Text style={s.emptyEmoji}>🔭</Text>
+                    <Text style={s.emptyTitle}>No universities found</Text>
+                    <Text style={s.emptySubtitle}>
+                      Try a different search term
+                    </Text>
+                  </View>
+                }
+                contentContainerStyle={s.listContent}
+              />
+            )}
           </Animated.View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -404,5 +413,15 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(174,214,241,0.5)',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: 'rgba(174,214,241,0.7)',
+    marginTop: 12,
   },
 });

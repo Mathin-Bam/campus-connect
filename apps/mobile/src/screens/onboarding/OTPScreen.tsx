@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation';
+import { API_URL } from '../../config/api';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'OTP'>;
@@ -146,35 +147,49 @@ export default function OTPScreen({ navigation, route }: Props) {
     const enteredOtp = otp.join('');
     if (enteredOtp.length < OTP_LENGTH) return;
     setIsVerifying(true);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setOtpError(false);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const response = await fetch(`${API_URL}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, otp: enteredOtp }),
+      });
 
-    if (enteredOtp === MOCK_OTP) {
-      // Success
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Animated.spring(successScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 6,
-        useNativeDriver: true,
-      }).start();
-      setTimeout(() => {
-        navigation.navigate('ProfileSetup', {
-          userId: 'mock-user-id',
-          email,
+      const data = await response.json();
+
+      if (response.ok) {
+        // Success - navigate to ProfileSetup
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        // TODO: Sign in to Firebase with custom token
+        // For now, navigate to ProfileSetup
+        navigation.navigate('ProfileSetup' as never, {
+          userId: 'mock_user_id',
+          email: email,
         });
-      }, 1000);
-    } else {
-      // Error
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } else {
+        throw new Error(data.error || 'Verification failed');
+      }
+    } catch (error) {
       setOtpError(true);
-      shakeError();
-      setOtp(['', '', '', '', '', '']);
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      setIsVerifying(false);
+      // Shake animation on error
+      Animated.sequence([
+        Animated.timing(shakeAnim, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnim, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-    setIsVerifying(false);
   };
 
   const handleResend = async () => {

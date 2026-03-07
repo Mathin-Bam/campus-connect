@@ -6,6 +6,8 @@ import UniversitySearchScreen from '../screens/onboarding/UniversitySearchScreen
 import OTPScreen from '../screens/onboarding/OTPScreen';
 import ProfileSetupScreen from '../screens/onboarding/ProfileSetupScreen';
 import ActivityFeedScreen from '../screens/main/ActivityFeedScreen';
+import ChatListScreen from '../screens/main/ChatListScreen';
+import MessageScreen from '../screens/main/MessageScreen';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -23,6 +25,15 @@ export type RootStackParamList = {
     email: string;
   };
   MainTabs: undefined;
+  ChatList: undefined;
+  MessageScreen: {
+    threadId: string;
+    otherUser: {
+      id: string;
+      displayName: string;
+      avatarUrl?: string;
+    };
+  };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -41,6 +52,8 @@ export default function Navigation() {
         <Stack.Screen name="OTP" component={OTPScreen} />
         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
         <Stack.Screen name="MainTabs" component={ActivityFeedScreen} />
+        <Stack.Screen name="ChatList" component={ChatListScreen} />
+        <Stack.Screen name="MessageScreen" component={MessageScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

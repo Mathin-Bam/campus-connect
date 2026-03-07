@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { prisma } from '../config/database';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
+import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
-router.patch('/:id', authMiddleware, async (req: AuthRequest, res) => {
+router.patch('/:id', requireAuth, async (req, res) => {
   try {
-    if (req.user!.userId !== req.params.id) {
+    if (req.user!.id !== req.params.id) {
       res.status(403).json({ error: 'Forbidden' });
       return;
     }
@@ -25,22 +25,20 @@ router.patch('/:id', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-router.patch('/fcm-token', authMiddleware, async (req: AuthRequest, res) => {
+router.patch('/fcm-token', requireAuth, async (req, res) => {
   try {
     const { fcmToken } = req.body;
     if (!fcmToken) {
       return res.status(400).json({ error: 'FCM token is required' });
     }
-
+    
     const user = await prisma.user.update({
-      where: { id: req.user!.userId },
-      data: { fcmToken },
+      where: { id: req.user!.id },
+      data: { pushToken: fcmToken },
     });
-
-    res.json({ success: true, user });
-  } catch (error) {
-    console.error('Error updating FCM token:', error);
-    res.status(500).json({ error: 'Failed to update FCM token' });
+    return res.json(user);
+  } catch {
+    return res.status(500).json({ error: 'Failed to update FCM token' });
   }
 });
 

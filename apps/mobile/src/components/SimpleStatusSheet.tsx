@@ -267,7 +267,13 @@ function ActivityTile({
           },
         ]}
       >
-        <Text style={s.tileEmoji}>{activity.emoji}</Text>
+        <View style={{
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}>
+          <Text style={s.tileEmoji}>{activity.emoji}</Text>
+        </View>
         <Text style={[s.tileLabel, selected && { color: activity.color }]}>
           {activity.label}
         </Text>

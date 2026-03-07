@@ -13,7 +13,7 @@ router.get('/universities', async (req, res) => {
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });
     }
-    
+
     const universities = await prisma.university.findMany({
       where: {
         OR: [
@@ -24,11 +24,11 @@ router.get('/universities', async (req, res) => {
       select: { id: true, name: true, emailDomain: true, city: true, country: true },
       take: 10,
     });
-    
-    res.json(universities);
+
+    return res.json({ universities });
   } catch (error) {
     console.error('University search error:', error);
-    res.status(500).json({ error: 'Failed to search universities' });
+    return res.status(500).json({ error: 'Failed to fetch universities' });
   }
 });
 
@@ -63,8 +63,9 @@ router.post('/register', async (req, res) => {
     } catch {
       firebaseUser = await auth.getUserByEmail(email);
     }
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await redis.setex(`otp:${email}`, 600, otp);
+    const otp = String(Math.floor(100000 + Math.random() * 900000))
+    const otpKey = `otp:${email.toLowerCase().trim()}` 
+    await redis.set(otpKey, otp, { ex: 600 })
     const user = await prisma.user.create({
       data: {
         firebaseUid: firebaseUser.uid,
@@ -95,12 +96,15 @@ router.post('/verify-otp', async (req, res) => {
       res.status(400).json({ error: 'email and otp are required' });
       return;
     }
-    const storedOtp = await redis.get(`otp:${email}`);
-    if (!storedOtp || storedOtp !== otp) {
-      res.status(400).json({ error: 'Invalid or expired OTP' });
-      return;
-    }
-    await redis.del(`otp:${email}`);
+    const otpKey = `otp:${email.toLowerCase().trim()}` 
+    const storedOtp = await redis.get<string>(otpKey)
+    console.log('DEBUG verify - key:', otpKey)
+    console.log('DEBUG verify - storedOtp:', storedOtp, typeof storedOtp)
+    console.log('DEBUG verify - receivedOtp:', otp, typeof otp)
+    console.log('DEBUG verify - match:', String(storedOtp) === String(otp))
+    if (!storedOtp) return res.status(400).json({ error: 'OTP expired' })
+    if (String(storedOtp) !== String(otp)) return res.status(400).json({ error: 'Invalid OTP' })
+    await redis.del(otpKey)
     await prisma.user.update({
       where: { email },
       data: { verified: true },
@@ -159,13 +163,11 @@ router.patch('/users/fcm-token', requireAuth, async (req, res) => {
 
     const user = await prisma.user.update({
       where: { id: req.user!.id },
-      data: { fcmToken },
+      data: { pushToken: fcmToken },
     });
-
-    res.json({ success: true, user });
-  } catch (error) {
-    console.error('FCM token update error:', error);
-    res.status(500).json({ error: 'Failed to update FCM token' });
+    return res.json(user);
+  } catch {
+    return res.status(500).json({ error: 'Failed to update FCM token' });
   }
 });
 

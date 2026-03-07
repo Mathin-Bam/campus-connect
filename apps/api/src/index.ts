@@ -5,11 +5,9 @@ validateEnv();
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { createAdapter } from '@socket.io/redis-adapter';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { redis } from './lib/redis';
 import { prisma } from './lib/prisma';
 import universitiesRouter from './routes/universities';
 import authRouter from './routes/auth';
@@ -23,11 +21,6 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: process.env.CLIENT_URL || '*', methods: ['GET', 'POST'] },
 });
-
-// Redis adapter for horizontal scaling
-const pubClient = redis;
-const subClient = redis;
-io.adapter(createAdapter(pubClient as any, subClient as any));
 
 // Middleware
 app.use(helmet());
@@ -45,16 +38,11 @@ app.use('/api/activity', activityRouter);
 // Health check
 app.get('/api/health', async (req, res) => {
   let dbOk = false;
-  let redisOk = false;
   try {
     await prisma.$queryRaw`SELECT 1`;
     dbOk = true;
   } catch {}
-  try {
-    await redis.ping();
-    redisOk = true;
-  } catch {}
-  res.json({ status: 'ok', db: dbOk, redis: redisOk, timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', db: dbOk, timestamp: new Date().toISOString() });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -77,11 +65,11 @@ io.on('connection', (socket) => {
     try {
       const message = await prisma.message.create({
         data: { threadId, senderId, content },
-      });
+      } as any);
       await prisma.chatThread.update({
         where: { id: threadId },
         data: { lastMessageAt: new Date() },
-      });
+      } as any);
       // Emit to ALL in thread room including sender (for multi-device)
       io.to(`thread_${threadId}`).emit('message_received', {
         threadId,
@@ -105,7 +93,7 @@ io.on('connection', (socket) => {
       await prisma.message.update({
         where: { id: messageId },
         data: { readAt: new Date() },
-      });
+      } as any);
       io.to(`thread_${threadId}`).emit('message_read_receipt', { messageId });
     } catch (err) {
       console.error('Error marking message as read:', err);
