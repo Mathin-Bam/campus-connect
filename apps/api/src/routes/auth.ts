@@ -1,10 +1,36 @@
 import { Router } from 'express';
-import { prisma } from '../config/database';
-import { adminAuth } from '../config/firebase';
-import { redis } from '../config/upstash';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
+import { auth, firebaseAdmin } from '../lib/firebase';
+import { redis } from '../lib/redis';
+import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
+
+// GET /api/universities?q=searchterm
+router.get('/universities', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string') {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+    
+    const universities = await prisma.university.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { emailDomain: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, name: true, emailDomain: true, city: true, country: true },
+      take: 10,
+    });
+    
+    res.json(universities);
+  } catch (error) {
+    console.error('University search error:', error);
+    res.status(500).json({ error: 'Failed to search universities' });
+  }
+});
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -33,9 +59,9 @@ router.post('/register', async (req, res) => {
     }
     let firebaseUser;
     try {
-      firebaseUser = await adminAuth.createUser({ email, displayName });
+      firebaseUser = await auth.createUser({ email, displayName });
     } catch {
-      firebaseUser = await adminAuth.getUserByEmail(email);
+      firebaseUser = await auth.getUserByEmail(email);
     }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await redis.setex(`otp:${email}`, 600, otp);
@@ -79,8 +105,8 @@ router.post('/verify-otp', async (req, res) => {
       where: { email },
       data: { verified: true },
     });
-    const firebaseUser = await adminAuth.getUserByEmail(email);
-    const customToken = await adminAuth.createCustomToken(firebaseUser.uid);
+    const firebaseUser = await auth.getUserByEmail(email);
+    const customToken = await auth.createCustomToken(firebaseUser.uid);
     res.json({ customToken, message: 'Email verified successfully' });
   } catch (error) {
     console.error('Verify OTP error:', error);
@@ -89,10 +115,10 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
+router.get('/me', requireAuth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
+      where: { id: req.user!.id },
       include: { university: true },
     });
     if (!user) {
@@ -102,6 +128,44 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
     res.json(user);
   } catch {
     res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// PATCH /api/users/profile
+router.patch('/users/profile', requireAuth, async (req, res) => {
+  try {
+    const { displayName, avatarUrl } = req.body;
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: {
+        ...(displayName && { displayName }),
+        ...(avatarUrl && { avatarUrl }),
+      },
+    });
+    res.json(user);
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// PATCH /api/users/fcm-token
+router.patch('/users/fcm-token', requireAuth, async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      return res.status(400).json({ error: 'FCM token is required' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { fcmToken },
+    });
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('FCM token update error:', error);
+    res.status(500).json({ error: 'Failed to update FCM token' });
   }
 });
 

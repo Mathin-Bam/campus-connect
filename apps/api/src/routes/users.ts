@@ -25,4 +25,23 @@ router.patch('/:id', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+router.patch('/fcm-token', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      return res.status(400).json({ error: 'FCM token is required' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { fcmToken },
+    });
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Error updating FCM token:', error);
+    res.status(500).json({ error: 'Failed to update FCM token' });
+  }
+});
+
 export default router;

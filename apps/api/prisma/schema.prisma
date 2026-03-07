@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -19,6 +20,7 @@ model User {
   universityId            String    @map("university_id")
   verified                Boolean   @default(false)
   pushToken               String?   @map("push_token")
+  fcmToken                String?   @map("fcm_token")
   notificationPreferences Json?     @map("notification_preferences")
   lastActiveAt            DateTime? @map("last_active_at")
   createdAt               DateTime  @default(now()) @map("created_at")
@@ -26,6 +28,8 @@ model User {
   university              University @relation(fields: [universityId], references: [id])
   activityStatuses        ActivityStatus[]
   sentMessages            Message[]  @relation("SentMessages")
+  threadsAsP1             ChatThread[] @relation("ThreadsAsP1")
+  threadsAsP2             ChatThread[] @relation("ThreadsAsP2")
   groupMemberships        GroupMember[]
   followers               Follow[]   @relation("Following")
   following               Follow[]   @relation("Follower")
@@ -100,6 +104,21 @@ model GroupMember {
   @@map("group_members")
 }
 
+model ChatThread {
+  id             String    @id @default(cuid())
+  participant1Id String    @map("participant1_id")
+  participant2Id String    @map("participant2_id")
+  lastMessageAt  DateTime  @default(now()) @map("last_message_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  participant1   User      @relation("ThreadsAsP1", fields: [participant1Id], references: [id])
+  participant2   User      @relation("ThreadsAsP2", fields: [participant2Id], references: [id])
+  messages       Message[]
+
+  @@unique([participant1Id, participant2Id])
+  @@map("chat_threads")
+}
+
 model ChatRoom {
   id            String    @id @default(uuid())
   roomType      String    @map("room_type")
@@ -117,17 +136,21 @@ model ChatRoom {
 
 model Message {
   id        String    @id @default(uuid())
-  roomId    String    @map("room_id")
+  roomId    String?   @map("room_id")
+  threadId  String?   @map("thread_id")
   senderId  String    @map("sender_id")
   content   String
   type      String    @default("text")
   readBy    Json?     @map("read_by")
+  readAt    DateTime? @map("read_at")
   createdAt DateTime  @default(now()) @map("created_at")
   deletedAt DateTime? @map("deleted_at")
-  room      ChatRoom  @relation(fields: [roomId], references: [id])
+  room      ChatRoom?  @relation(fields: [roomId], references: [id])
+  thread    ChatThread? @relation(fields: [threadId], references: [id])
   sender    User      @relation("SentMessages", fields: [senderId], references: [id])
 
   @@index([roomId, createdAt(sort: Desc)])
+  @@index([threadId, createdAt(sort: Desc)])
   @@map("messages")
 }
 
