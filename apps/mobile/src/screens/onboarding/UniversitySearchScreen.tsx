@@ -20,6 +20,7 @@ export default function UniversitySearchScreen({ navigation }: any) {
   const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [initialLoading, setInitialLoading] = useState(true);
   const debounceRef = useRef<any>(null);
 
   const search = async (text: string) => {
@@ -45,14 +46,32 @@ export default function UniversitySearchScreen({ navigation }: any) {
   };
 
   useEffect(() => {
-    // Load some initial universities when component mounts
+  let attempts = 0;
+  const load = () => {
     fetch('https://campus-connect-api-kq3u.onrender.com/api/universities?q=')
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data)) setUniversities(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setUniversities(data);
+          setInitialLoading(false);
+        } else if (attempts < 3) {
+          attempts++;
+          setTimeout(load, 3000);
+        } else {
+          setInitialLoading(false);
+        }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {
+        if (attempts < 3) {
+          attempts++;
+          setTimeout(load, 3000);
+        } else {
+          setInitialLoading(false);
+        }
+      });
+  };
+  load();
+}, []);
 
   const handleSelect = (uni: University) => {
     navigation.navigate('OTP', {
@@ -98,9 +117,10 @@ export default function UniversitySearchScreen({ navigation }: any) {
           </View>
         ) : null}
 
-        {query.length < 2 && (
+        {initialLoading && (
           <View style={s.hint}>
-            <Text style={s.hintText}>Type at least 2 characters to search</Text>
+            <ActivityIndicator size="large" color="#1B6CA8" style={{ marginBottom: 12 }} />
+            <Text style={s.hintText}>Loading universities...</Text>
           </View>
         )}
 
@@ -119,12 +139,14 @@ export default function UniversitySearchScreen({ navigation }: any) {
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            query.length >= 2 && !loading ? (
-              <View style={s.hint}>
-                <Text style={s.hintText}>No universities found for "{query}"</Text>
-              </View>
-            ) : null
-          }
+          !initialLoading && !loading ? (
+            <View style={s.hint}>
+              <Text style={s.hintText}>
+                {query.length >= 2 ? `No results for "${query}"` : 'No universities available'}
+              </Text>
+            </View>
+          ) : null
+        }
         />
       </SafeAreaView>
     </View>
