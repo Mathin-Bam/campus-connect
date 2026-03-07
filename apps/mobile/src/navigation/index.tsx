@@ -23,7 +23,6 @@ export type RootStackParamList = {
   };
   ProfileSetup: {
     userId: string;
-    email: string;
     token: string;
   };
   ActivityFeed: undefined;

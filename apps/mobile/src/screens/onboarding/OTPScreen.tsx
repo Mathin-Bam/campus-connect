@@ -18,6 +18,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation';
 import { API_URL } from '../../config/api';
+import { useAuth } from '../../context/AuthContext';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'OTP'>;
@@ -29,6 +30,7 @@ const RESEND_SECONDS = 60;
 
 export default function OTPScreen({ navigation, route }: Props) {
   const { university } = route.params;
+  const { signInWithToken } = useAuth();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [step, setStep] = useState<'email' | 'otp'>('email');
@@ -204,17 +206,19 @@ export default function OTPScreen({ navigation, route }: Props) {
         return;
       }
       
-      // Success - navigate to ProfileSetup
+      // Success - sign in to Firebase and navigate to ProfileSetup
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsVerifying(false);
       
-      // TODO: Sign in to Firebase with custom token
-      // For now, navigate to ProfileSetup
-      // @ts-ignore
+      await signInWithToken(
+        data.customToken,
+        data.user?.id,
+        email.toLowerCase().trim(),
+        university.id,
+      );
       navigation.navigate('ProfileSetup', {
-        userId: data.userId || data.uid || 'unknown',
-        email: email,
-        token: data.customToken || data.token || '',
+        userId: data.user?.id,
+        token: '', // no longer needed, idToken comes from Firebase
       });
     } catch (error: any) {
       clearTimeout(timeout);

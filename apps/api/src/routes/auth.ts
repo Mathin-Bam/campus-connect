@@ -107,13 +107,16 @@ router.post('/verify-otp', async (req, res) => {
     if (!storedOtp) return res.status(400).json({ error: 'OTP expired' })
     if (String(storedOtp) !== String(otp)) return res.status(400).json({ error: 'Invalid OTP' })
     await redis.del(otpKey)
-    await prisma.user.update({
-      where: { email },
-      data: { verified: true },
-    });
     const firebaseUser = await auth.getUserByEmail(email);
+    const updatedUser = await prisma.user.update({
+      where: { email },
+      data: {
+        verified: true,
+        firebaseUid: firebaseUser.uid,
+      },
+    });
     const customToken = await auth.createCustomToken(firebaseUser.uid);
-    return res.json({ customToken, message: 'Email verified successfully' });
+    return res.json({ customToken, message: 'Email verified successfully', user: updatedUser });
   } catch (error) {
     console.error('Verify OTP error:', error);
     return res.status(500).json({ error: 'Verification failed' });

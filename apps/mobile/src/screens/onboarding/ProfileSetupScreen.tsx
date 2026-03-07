@@ -39,8 +39,8 @@ const ACTIVITIES = [
 ];
 
 export default function ProfileSetupScreen({ navigation, route }: Props) {
-  const { userId, email, token } = route.params;
-  const { setAuth } = useAuth();
+  const { userId } = route.params;
+  const { idToken, updateUser, user } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [avatarInitials, setAvatarInitials] = useState('');
@@ -113,18 +113,14 @@ export default function ProfileSetupScreen({ navigation, route }: Props) {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({ displayName: displayName.trim() }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed'); return; }
       
-      // Set auth context - this will automatically navigate to main screens
-      setAuth(
-        data.user || { id: userId, displayName: displayName.trim(), email: '', universityId: '', verified: true },
-        token
-      );
+      updateUser({ displayName: displayName.trim() });
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
@@ -229,7 +225,7 @@ export default function ProfileSetupScreen({ navigation, route }: Props) {
               {/* Email display */}
               <View style={s.emailRow}>
                 <Text style={s.emailIcon}>✉️</Text>
-                <Text style={s.emailText}>{email}</Text>
+                <Text style={s.emailText}>{user?.email}</Text>
                 <View style={s.verifiedBadge}>
                   <Text style={s.verifiedText}>✓ Verified</Text>
                 </View>

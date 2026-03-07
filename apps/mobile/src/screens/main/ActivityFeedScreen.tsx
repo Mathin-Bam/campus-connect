@@ -30,7 +30,7 @@ const FILTERS = [
 ];
 
 export default function ActivityFeedScreen() {
-  const { token: userToken, user: currentUser } = useAuth();
+  const { idToken, user: currentUser } = useAuth();
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [statusVisible, setStatusVisible] = useState(false);
@@ -113,11 +113,11 @@ export default function ActivityFeedScreen() {
 
   // Fetch feed from API
   const fetchFeed = async () => {
-    if (!userToken) return;
+    if (!idToken) return;
     
     try {
       const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/activity/feed', {
-        headers: { Authorization: `Bearer ${userToken}` },
+        headers: { Authorization: `Bearer ${idToken}` },
       });
       const data = await res.json();
       const items = Array.isArray(data.feed) ? data.feed : Array.isArray(data) ? data : [];
@@ -129,7 +129,7 @@ export default function ActivityFeedScreen() {
 
   // Socket.io connection for real-time updates
   useEffect(() => {
-    if (!userToken || !currentUser?.universityId) return;
+    if (!idToken || !currentUser?.universityId) return;
 
     const socket = io('https://campus-connect-api-kq3u.onrender.com');
     
@@ -152,21 +152,21 @@ export default function ActivityFeedScreen() {
     return () => {
       socket.disconnect();
     };
-  }, [userToken, currentUser]);
+  }, [idToken, currentUser]);
 
   useEffect(() => {
     fetchFeed();
-  }, [userToken]);
+  }, [idToken]);
 
   const handleSayHi = async (targetUserId: string, displayName: string) => {
-    if (!userToken) return;
+    if (!idToken) return;
     
     try {
       const response = await fetch('https://campus-connect-api-kq3u.onrender.com/api/chat/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({ targetUserId }),
       });
