@@ -9,7 +9,10 @@ const router: Router = Router();
 router.post('/set-password', requireAuth, async (req, res) => {
   try {
     const { password } = req.body;
-    if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (!password || password.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return;
+    }
     const hash = await bcrypt.hash(password, 10);
     await prisma.user.update({
       where: { id: (req as any).user.id },
@@ -36,7 +39,10 @@ router.get('/:profileId/public', requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { profileId: req.params.profileId },
     select: {
-      id: true, displayName: true, avatarUrl: true, profileId: true,
+      id: true,
+      displayName: true,
+      avatarUrl: true,
+      profileId: true,
       university: { select: { name: true } },
       activityStatuses: {
         where: { expiresAt: { gt: new Date() } },
@@ -45,7 +51,10 @@ router.get('/:profileId/public', requireAuth, async (req, res) => {
       },
     },
   });
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
   res.json({ user });
 });
 
