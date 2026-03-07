@@ -18,6 +18,7 @@ import { io, Socket } from 'socket.io-client';
 import SimpleStatusSheet from '../../components/StatusBottomSheet';
 import { API_URL } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
+import { apiFetch } from '../../config/apiClient';
 
 const FILTERS = [
   { id: 'all', label: 'All', emoji: '⚡' },
@@ -158,35 +159,19 @@ export default function ActivityFeedScreen() {
     fetchFeed();
   }, [idToken]);
 
-  const handleSayHi = async (targetUserId: string, displayName: string) => {
-    if (!idToken) return;
-    
+  const handleSayHi = async (targetUserId: string, targetUserName: string) => {
     try {
-      const response = await fetch('https://campus-connect-api-kq3u.onrender.com/api/chat/initiate', {
+      const data = await apiFetch('/api/chat/initiate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
         body: JSON.stringify({ targetUserId }),
       });
-      
-      if (response.ok) {
-        const { thread } = await response.json();
-        // @ts-ignore
-        navigation.navigate('MessageScreen', {
-          threadId: thread.id,
-          otherUser: {
-            id: targetUserId,
-            displayName: displayName,
-            avatarUrl: undefined,
-          },
-        });
-      } else {
-        console.error('Failed to initiate chat');
-      }
-    } catch (err) {
-      console.error('Failed to initiate chat:', err);
+      const params = {
+        threadId: data.thread?.id || data.threadId,
+        otherUser: { id: targetUserId, displayName: targetUserName },
+      };
+      (navigation.navigate as any)('MessageScreen', params);
+    } catch (e) {
+      console.log('Chat initiate error:', e);
     }
   };
 

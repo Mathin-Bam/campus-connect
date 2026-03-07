@@ -14,8 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { API_URL } from '../../config/api';
-import { useChat } from '../../hooks/useChat';
+import { apiFetch } from '../../config/apiClient';
+import { io, Socket } from 'socket.io-client';
+import { useAuth } from '../../context/AuthContext';
 
 type Message = {
   id: string;
@@ -45,14 +46,12 @@ export default function MessageScreen() {
   const route = useRoute();
   const navigation = useNavigation<NavigationProp>();
   const { threadId, otherUser } = route.params as RouteParams;
+  const { idToken, user } = useAuth();
   
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [userToken, setUserToken] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<number | null>(null);
@@ -64,101 +63,52 @@ export default function MessageScreen() {
     }, 100);
   }, []);
 
-  const { sendMessage, sendTyping, markMessageAsRead } = useChat(
-    threadId,
-    (newMessage) => {
-      setMessages(prev => [...prev, newMessage]);
-      scrollToBottom();
-    }
-  );
-
   useEffect(() => {
-    // Get user token and ID from storage (you'll need to implement this)
-    const getAuthData = async () => {
-      // For now, using placeholders - you should get these from your auth state
-      const token = 'your_firebase_jwt_token'; // Replace with actual token retrieval
-      const userId = 'current_user_id'; // Replace with actual user ID retrieval
-      setUserToken(token);
-      setCurrentUserId(userId);
-    };
-    getAuthData();
-  }, []);
-
-  useEffect(() => {
-    navigation.setOptions({
-      title: otherUser.displayName,
-      headerStyle: { backgroundColor: '#0A1929' },
-      headerTintColor: '#FFFFFF',
-    });
-  }, [navigation, otherUser.displayName]);
-
-  const fetchMessages = useCallback(async () => {
-    if (!userToken) return;
-    
-    try {
-      const response = await fetch(`${API_URL}/api/chat/messages/${threadId}`, {
-        headers: { Authorization: `Bearer ${userToken}` },
-      });
-      const data = await response.json();
-      setMessages(data.messages || []);
-      scrollToBottom();
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userToken, threadId, scrollToBottom]);
-
-  const handleSend = useCallback(async () => {
-    if (!inputText.trim() || !currentUserId || sending) return;
-    
-    const messageText = inputText.trim();
-    setInputText('');
-    setSending(true);
-    
-    try {
-      // Send via socket
-      sendMessage(messageText, currentUserId);
-      
-      // Also send via REST as fallback
-      const response = await fetch(`${API_URL}/api/chat/messages/${threadId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${userToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: messageText }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to send message');
+    const load = async () => {
+      try {
+        const data = await apiFetch(`/api/chat/messages/${threadId}`);
+        setMessages(Array.isArray(data.messages) ? data.messages : []);
+      } catch (e) {
+        console.log('Messages error:', e);
       }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Restore input if failed
-      setInputText(messageText);
+    };
+    load();
+  }, [threadId]);
+
+  useEffect(() => {
+    if (!idToken) return;
+    const socket = io('https://campus-connect-api-kq3u.onrender.com', {
+      auth: { token: idToken },
+      transports: ['websocket'],
+    });
+    socketRef.current = socket;
+    socket.emit('join_chat', threadId);
+    socket.on('message_received', (msg: any) => {
+      setMessages(prev => [...prev, msg]);
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [threadId, idToken]);
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return;
+    const content = text.trim();
+    setText('');
+    setSending(true);
+    try {
+      const data = await apiFetch(`/api/chat/messages/${threadId}`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+      setMessages(prev => [...prev, data.message || data]);
+    } catch (e) {
+      console.log('Send error:', e);
+      setText(content);
     } finally {
       setSending(false);
     }
-  }, [inputText, currentUserId, sending, sendMessage, userToken, threadId]);
-
-  const handleTyping = useCallback((text: string) => {
-    setInputText(text);
-    
-    if (currentUserId) {
-      sendTyping(currentUserId);
-    }
-    
-    // Clear existing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    // Set new timeout to stop typing indicator after 2 seconds
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-    }, 2000);
-  }, [currentUserId, sendTyping]);
+  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -178,9 +128,9 @@ export default function MessageScreen() {
       .slice(0, 2);
   };
 
-  const isMyMessage = (message: Message) => message.senderId === currentUserId;
+  const isMyMessage = (message: any) => message.senderId === user?.id;
 
-  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+  const renderMessage = ({ item, index }: { item: any; index: number }) => {
     const isMine = isMyMessage(item);
     const showReadReceipt = isMine && index === messages.length - 1;
     
@@ -204,8 +154,6 @@ export default function MessageScreen() {
   };
 
   const renderTypingIndicator = () => {
-    if (!isTyping) return null;
-    
     return (
       <View style={s.messageContainer}>
         <View style={s.messageBubble}>
@@ -218,16 +166,6 @@ export default function MessageScreen() {
       </View>
     );
   };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={s.container}>
-        <View style={s.loadingContainer}>
-          <ActivityIndicator size="large" color="#1B6CA8" />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={s.container}>
@@ -253,8 +191,8 @@ export default function MessageScreen() {
           <View style={s.inputWrapper}>
             <TextInput
               style={s.textInput}
-              value={inputText}
-              onChangeText={handleTyping}
+              value={text}
+              onChangeText={setText}
               placeholder="Message..."
               placeholderTextColor="rgba(174,214,241,0.5)"
               multiline
@@ -262,9 +200,9 @@ export default function MessageScreen() {
               textAlignVertical="center"
             />
             <TouchableOpacity
-              style={[s.sendButton, !inputText.trim() && s.sendButtonDisabled]}
+              style={[s.sendButton, !text.trim() && s.sendButtonDisabled]}
               onPress={handleSend}
-              disabled={!inputText.trim() || sending}
+              disabled={!text.trim() || sending}
             >
               {sending ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />

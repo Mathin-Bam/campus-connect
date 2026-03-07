@@ -49,8 +49,8 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="UniversitySearch" component={UniversitySearchScreen} />
-            <Stack.Screen name="OTP" component={OTPScreen} />
-            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+            <Stack.Screen name="OTP" component={OTPScreen as any} />
+            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen as any} />
           </>
         ) : (
           <>

@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { API_URL } from '../../config/api';
+import { useFocusEffect } from '@react-navigation/native';
+import { apiFetch } from '../../config/apiClient';
 
 type Thread = {
   id: string;
@@ -47,36 +48,41 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const [threads, setThreads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [userToken, setUserToken] = useState<string | null>(null);
 
-  const fetchThreads = useCallback(async () => {
-    if (!userToken) return;
-    
-    try {
-      const response = await fetch(`${API_URL}/api/chat/threads`, {
-        headers: { Authorization: `Bearer ${userToken}` },
-      });
-      const data = await response.json();
-      setThreads(data.threads || []);
-    } catch (error) {
-      console.error('Error fetching threads:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [userToken]);
-
-  useEffect(() => {
-    fetchThreads();
-  }, [fetchThreads]);
+  useFocusEffect(
+    React.useCallback(() => {
+      let active = true;
+      const load = async () => {
+        try {
+          const data = await apiFetch('/api/chat/threads');
+          if (active) setThreads(Array.isArray(data.threads) ? data.threads : Array.isArray(data) ? data : []);
+        } catch (e) {
+          console.log('Chat threads error:', e);
+        } finally {
+          if (active) setLoading(false);
+        }
+      };
+      load();
+      return () => { active = false; };
+    }, [])
+  );
 
   const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchThreads();
-  }, [fetchThreads]);
+    setLoading(true);
+    const load = async () => {
+      try {
+        const data = await apiFetch('/api/chat/threads');
+        setThreads(Array.isArray(data.threads) ? data.threads : Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.log('Chat threads error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const handleThreadPress = useCallback((thread: Thread) => {
     navigation.navigate('MessageScreen', {
@@ -188,7 +194,7 @@ export default function ChatListScreen() {
         contentContainerStyle={s.content}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={loading}
             onRefresh={handleRefresh}
             tintColor="#1B6CA8"
           />

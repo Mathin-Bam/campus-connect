@@ -4,6 +4,26 @@ import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
+router.patch('/profile', requireAuth, async (req, res) => {
+  const { displayName, avatarUrl, interests } = req.body;
+  const user = await prisma.user.update({
+    where: { id: (req as any).user.id },
+    data: {
+      displayName,
+      ...(avatarUrl && { avatarUrl }),
+    },
+  });
+  res.json({ user });
+});
+
+router.get('/me', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: (req as any).user.id },
+    include: { university: true },
+  });
+  res.json({ user });
+});
+
 router.patch('/:id', requireAuth, async (req, res) => {
   try {
     if (req.user!.id !== req.params.id) {
