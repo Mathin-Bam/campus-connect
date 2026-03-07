@@ -4,6 +4,33 @@ import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
+// GET /api/users/me - full profile
+router.get('/me', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: (req as any).user.id },
+    include: { university: { select: { name: true, emailDomain: true } } },
+  });
+  res.json({ user });
+});
+
+// GET /api/users/:profileId/public - public profile view
+router.get('/:profileId/public', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { profileId: req.params.profileId },
+    select: {
+      id: true, displayName: true, avatarUrl: true, profileId: true,
+      university: { select: { name: true } },
+      activityStatuses: {
+        where: { expiresAt: { gt: new Date() } },
+        take: 1,
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ user });
+});
+
 router.patch('/profile', requireAuth, async (req, res) => {
   const { displayName, avatarUrl, interests } = req.body;
   const user = await prisma.user.update({
@@ -12,14 +39,6 @@ router.patch('/profile', requireAuth, async (req, res) => {
       displayName,
       ...(avatarUrl && { avatarUrl }),
     },
-  });
-  res.json({ user });
-});
-
-router.get('/me', requireAuth, async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: (req as any).user.id },
-    include: { university: true },
   });
   res.json({ user });
 });

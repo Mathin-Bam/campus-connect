@@ -28,8 +28,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
     (req as any).user = user;
     next();
-  } catch (e) {
-    res.status(401).json({ error: 'Invalid token' });
-    return;
+  } catch (e: any) {
+    if (e.code === 'auth/id-token-expired') {
+      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
+    return res.status(401).json({ error: 'Invalid token' });
   }
 }

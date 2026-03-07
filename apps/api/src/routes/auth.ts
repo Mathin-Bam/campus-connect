@@ -175,4 +175,25 @@ router.patch('/users/fcm-token', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/auth/login - for returning users
+router.post('/login', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!user) return res.status(404).json({ error: 'No account found with this email' });
+    if (!user.verified) return res.status(400).json({ error: 'Account not verified' });
+
+    // Send OTP for login
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const otpKey = `otp:${email.toLowerCase().trim()}`;
+    await redis.set(otpKey, otp, { ex: 3600 });
+
+    res.json({ message: 'OTP sent', otp, userId: user.id }); // otp visible in dev
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

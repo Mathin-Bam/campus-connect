@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import UniversitySearchScreen from '../screens/onboarding/UniversitySearchScreen';
+import LoginScreen from '../screens/onboarding/LoginScreen';
 import OTPScreen from '../screens/onboarding/OTPScreen';
 import ProfileSetupScreen from '../screens/onboarding/ProfileSetupScreen';
 import ActivityFeedScreen from '../screens/main/ActivityFeedScreen';
@@ -12,6 +13,7 @@ import MessageScreen from '../screens/main/MessageScreen';
 
 export type RootStackParamList = {
   Welcome: undefined;
+  Login: undefined;
   UniversitySearch: undefined;
   OTP: {
     university: {
@@ -49,6 +51,7 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="UniversitySearch" component={UniversitySearchScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="OTP" component={OTPScreen as any} />
             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen as any} />
           </>

@@ -452,7 +452,7 @@ function ActivityCard({ item, index, onSayHi }: {
             <View style={s.cardFooter}>
               <TouchableOpacity 
                 style={[s.joinBtn, { borderColor: item.color + '66' }]}
-                onPress={() => onSayHi(item.id, item.name)}
+                onPress={() => onSayHi(item.user.id, item.user.displayName)}
               >
                 <Text style={[s.joinBtnText, { color: item.color }]}>
                   Say hi 👋

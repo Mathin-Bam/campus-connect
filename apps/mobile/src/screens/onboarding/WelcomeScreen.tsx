@@ -320,18 +320,12 @@ export default function WelcomeScreen({ navigation }: Props) {
 
             <View style={{ height: 12 }} />
 
-            {/* Secondary CTA — glassmorphism */}
-            <Animated.View style={{ transform: [{ scale: btn2Scale }] }}>
-              <TouchableOpacity
-                onPressIn={() => pressIn(btn2Scale)}
-                onPressOut={() => pressOut(btn2Scale)}
-                onPress={handleLogin}
-                activeOpacity={1}
-                style={s.secondaryBtn}
-              >
-                <Text style={s.secondaryBtnText}>I already have an account</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            {/* Sign in link */}
+            <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 16, alignItems: 'center' }}>
+              <Text style={{ color: 'rgba(174,214,241,0.5)', fontSize: 14 }}>
+                Already have an account? <Text style={{ color: '#1B6CA8', fontWeight: '700' }}>Sign in</Text>
+              </Text>
+            </TouchableOpacity>
 
             {/* Trust badge */}
             <View style={s.trustRow}>
