@@ -10,8 +10,15 @@ const router: Router = Router();
 router.get('/universities', async (req, res) => {
   try {
     const { q } = req.query;
+    
+    // If no query, return first 10 universities
     if (!q || typeof q !== 'string') {
-      return res.status(400).json({ error: 'Search query is required' });
+      const universities = await prisma.university.findMany({
+        select: { id: true, name: true, emailDomain: true, city: true, country: true },
+        take: 10,
+        orderBy: { name: 'asc' },
+      });
+      return res.json({ universities });
     }
 
     const universities = await prisma.university.findMany({

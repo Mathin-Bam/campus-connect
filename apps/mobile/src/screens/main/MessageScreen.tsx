@@ -55,8 +55,14 @@ export default function MessageScreen() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const flatListRef = useRef<FlatList>(null);
-  const typingTimeoutRef = useRef<any>();
+  const typingTimeoutRef = useRef<number | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
 
   const { sendMessage, sendTyping, markMessageAsRead } = useChat(
     threadId,
@@ -102,12 +108,6 @@ export default function MessageScreen() {
       setLoading(false);
     }
   }, [userToken, threadId, scrollToBottom]);
-
-  const scrollToBottom = useCallback(() => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, []);
 
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || !currentUserId || sending) return;

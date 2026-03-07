@@ -45,6 +45,7 @@ export default function ProfileSetupScreen({ navigation, route }: Props) {
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [avatarInitials, setAvatarInitials] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const btnScale = useRef(new Animated.Value(1)).current;
@@ -108,33 +109,26 @@ export default function ProfileSetupScreen({ navigation, route }: Props) {
     
     try {
       // Update profile via API
-      const response = await fetch(`${API_URL}/api/users/profile`, {
+      const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/users/profile', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ displayName: displayName.trim() }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
-      const data = await response.json();
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Failed'); return; }
       
       // Set auth context - this will automatically navigate to main screens
-      setAuth({
-        id: userId,
-        email,
-        displayName: displayName.trim(),
-        universityId: data.user?.universityId || '',
-        verified: true,
-      }, token);
+      setAuth(
+        data.user || { id: userId, displayName: displayName.trim(), email: '', universityId: '', verified: true },
+        token
+      );
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error) {
-      console.error('Profile setup error:', error);
+    } catch (error: any) {
+      setError(error.message || 'Failed to update profile');
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsSubmitting(false);
@@ -278,6 +272,12 @@ export default function ProfileSetupScreen({ navigation, route }: Props) {
                   </LinearGradient>
                 </TouchableOpacity>
               </Animated.View>
+
+              {error && (
+                <View style={s.errorBox}>
+                  <Text style={s.errorText}>{error}</Text>
+                </View>
+              )}
 
               {!canProceed && (
                 <Text style={s.hint}>
@@ -553,5 +553,17 @@ const s = StyleSheet.create({
     color: 'rgba(174,214,241,0.4)',
     textAlign: 'center',
     marginTop: -8,
+  },
+  errorBox: {
+    marginHorizontal: 20,
+    padding: 12,
+    backgroundColor: 'rgba(231,76,60,0.15)',
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 13,
+    textAlign: 'center',
   },
 });

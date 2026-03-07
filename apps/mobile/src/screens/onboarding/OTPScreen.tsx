@@ -36,6 +36,7 @@ export default function OTPScreen({ navigation, route }: Props) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [otpError, setOtpError] = useState(false);
   const [devOtp, setDevOtp] = useState<string>(''); // For dev testing display
+  const [error, setError] = useState('');
 
   const otpRefs = useRef<(TextInput | null)[]>([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -98,24 +99,23 @@ export default function OTPScreen({ navigation, route }: Props) {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
+      const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, universityId: university.id, displayName: email.split('@')[0] }),
+        body: JSON.stringify({
+          email: email.toLowerCase().trim(),
+          universityId: university.id,
+          displayName: 'User',
+        }),
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to send OTP');
-      }
-      
-      const data = await response.json();
-      setDevOtp(data.otp || ''); // Store OTP for dev display
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Failed'); return; }
+      if (data.otp) setDevOtp(String(data.otp)); // show OTP on screen for testing
       setStep('otp');
       startCountdown();
       setTimeout(() => otpRefs.current[0]?.focus(), 300);
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to send verification code');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to send verification code');
     }
   };
 
@@ -168,33 +168,34 @@ export default function OTPScreen({ navigation, route }: Props) {
     setOtpError(false);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/verify-otp`, {
+      const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/auth/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, otp: enteredOtp }),
+        body: JSON.stringify({
+          email: email.toLowerCase().trim(),
+          otp: String(otp),
+        }),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Success - navigate to ProfileSetup
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
-        // TODO: Sign in to Firebase with custom token
-        // For now, navigate to ProfileSetup
-        navigation.navigate('ProfileSetup' as never, {
-          userId: data.userId || data.uid || 'unknown',
-          email: email,
-          token: data.customToken || data.token || '',
-        });
-      } else {
-        throw new Error(data.error || 'Verification failed');
-      }
-    } catch (error) {
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Invalid OTP'); return; }
+      
+      // Success - navigate to ProfileSetup
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // TODO: Sign in to Firebase with custom token
+      // For now, navigate to ProfileSetup
+      // @ts-ignore
+      navigation.navigate('ProfileSetup', {
+        userId: data.userId || data.uid || 'unknown',
+        email: email,
+        token: data.customToken || data.token || '',
+      });
+    } catch (error: any) {
       setOtpError(true);
       setIsVerifying(false);
+      setError(error.message || 'Verification failed');
       // Shake animation on error
       Animated.sequence([
         Animated.timing(shakeAnim, {

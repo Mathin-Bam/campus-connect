@@ -23,11 +23,11 @@ export default function UniversitySearchScreen({ navigation }: any) {
   const debounceRef = useRef<any>(null);
 
   const search = async (text: string) => {
-    if (text.length < 2) { setUniversities([]); return; }
+    if (text.length < 2 && text.length > 0) { setUniversities([]); return; }
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_URL}/api/universities?q=${encodeURIComponent(text)}`);
+      const res = await fetch(`https://campus-connect-api-kq3u.onrender.com/api/universities?q=${encodeURIComponent(text)}`);
       const data = await res.json();
       setUniversities(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -43,6 +43,16 @@ export default function UniversitySearchScreen({ navigation }: any) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => search(text), 300);
   };
+
+  useEffect(() => {
+    // Load some initial universities when component mounts
+    fetch('https://campus-connect-api-kq3u.onrender.com/api/universities?q=')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setUniversities(data);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSelect = (uni: University) => {
     navigation.navigate('OTP', {

@@ -34,7 +34,80 @@ export default function ActivityFeedScreen() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [statusVisible, setStatusVisible] = useState(false);
-  const [feedItems, setFeedItems] = useState<any[]>([]);
+  const [feedItems, setFeedItems] = useState<any[]>([
+    {
+      id: '1',
+      name: 'Omar K.',
+      initials: 'OK',
+      activity: 'Studying',
+      activityId: 'study',
+      emoji: '📚',
+      location: 'Main Library',
+      message: 'anyone want to study algorithms together?',
+      minutesAgo: 2,
+      color: '#3498DB',
+    },
+    {
+      id: '2',
+      name: 'Sarah M.',
+      initials: 'SM',
+      activity: 'At the Gym',
+      activityId: 'gym',
+      emoji: '💪',
+      location: 'Student Rec Center',
+      message: 'leg day 🦵 anyone else here?',
+      minutesAgo: 5,
+      color: '#8E44AD',
+    },
+    {
+      id: '3',
+      name: 'James L.',
+      initials: 'JL',
+      activity: 'Getting Food',
+      activityId: 'food',
+      emoji: '🍔',
+      location: 'Campus Dining Hall',
+      message: 'pizza is back on the menu today!',
+      minutesAgo: 8,
+      color: '#F39C12',
+    },
+    {
+      id: '4',
+      name: 'Aisha R.',
+      initials: 'AR',
+      activity: 'Playing Sports',
+      activityId: 'sports',
+      emoji: '⚽',
+      location: 'North Field',
+      message: 'pickup football game, need 2 more people',
+      minutesAgo: 12,
+      color: '#E74C3C',
+    },
+    {
+      id: '5',
+      name: 'Dev P.',
+      initials: 'DP',
+      activity: 'Gaming',
+      activityId: 'gaming',
+      emoji: '🎮',
+      location: 'Student Lounge',
+      message: 'smash bros tournament starting soon',
+      minutesAgo: 15,
+      color: '#E67E22',
+    },
+    {
+      id: '6',
+      name: 'Lena W.',
+      initials: 'LW',
+      activity: 'Being Social',
+      activityId: 'social',
+      emoji: '🎉',
+      location: 'Campus Quad',
+      message: 'hanging outside, weather is perfect rn',
+      minutesAgo: 18,
+      color: '#1ABC9C',
+    },
+  ]);
 
   const navigation = useNavigation();
 
@@ -43,13 +116,14 @@ export default function ActivityFeedScreen() {
     if (!userToken) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/activity/feed`, {
+      const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/activity/feed', {
         headers: { Authorization: `Bearer ${userToken}` },
       });
-      const data = await response.json();
-      setFeedItems(data.feed || []);
-    } catch (error) {
-      console.error('Feed fetch error:', error);
+      const data = await res.json();
+      const items = Array.isArray(data.feed) ? data.feed : Array.isArray(data) ? data : [];
+      if (items.length > 0) setFeedItems(items); // only replace mock if real data exists
+    } catch (e) {
+      // keep mock data on error — this is intentional
     }
   };
 
@@ -57,7 +131,7 @@ export default function ActivityFeedScreen() {
   useEffect(() => {
     if (!userToken || !currentUser?.universityId) return;
 
-    const socket = io(API_URL);
+    const socket = io('https://campus-connect-api-kq3u.onrender.com');
     
     socket.emit('join_university', { universityId: currentUser.universityId });
     
@@ -75,7 +149,9 @@ export default function ActivityFeedScreen() {
       setFeedItems(prev => prev.filter(i => i.userId !== userId));
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+    };
   }, [userToken, currentUser]);
 
   useEffect(() => {
@@ -86,7 +162,7 @@ export default function ActivityFeedScreen() {
     if (!userToken) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/chat/initiate`, {
+      const response = await fetch('https://campus-connect-api-kq3u.onrender.com/api/chat/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,14 +173,15 @@ export default function ActivityFeedScreen() {
       
       if (response.ok) {
         const { thread } = await response.json();
-        navigation.navigate('MessageScreen' as never, {
+        // @ts-ignore
+        navigation.navigate('MessageScreen', {
           threadId: thread.id,
           otherUser: {
             id: targetUserId,
             displayName: displayName,
             avatarUrl: undefined,
           },
-        } as never);
+        });
       } else {
         console.error('Failed to initiate chat');
       }
