@@ -13,7 +13,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { useNavigation } from '@react-navigation/native';
 import { io, Socket } from 'socket.io-client';
 import SimpleStatusSheet from '../../components/StatusBottomSheet';
 import ProfileDropdown from '../../components/ProfileDropdown';
@@ -31,9 +30,8 @@ const FILTERS = [
   { id: 'social', label: 'Social', emoji: '🎉' },
 ];
 
-export default function ActivityFeedScreen() {
+export default function ActivityFeedScreen({ navigation }: any) {
   const { idToken, user: currentUser } = useAuth();
-  const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [statusVisible, setStatusVisible] = useState(false);
@@ -112,8 +110,6 @@ export default function ActivityFeedScreen() {
       color: '#1ABC9C',
     },
   ]);
-
-  const navigation = useNavigation();
 
   // Fetch feed from API
   const fetchFeed = async () => {
