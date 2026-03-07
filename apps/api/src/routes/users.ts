@@ -16,7 +16,7 @@ router.post('/set-password', requireAuth, async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     await prisma.user.update({
       where: { id: (req as any).user.id },
-      data: { passwordHash: hash },
+      data: { passwordHash: hash } as any,
     });
     res.json({ message: 'Password set successfully' });
   } catch (e: any) {
@@ -37,7 +37,7 @@ router.get('/me', requireAuth, async (req, res) => {
 // GET /api/users/:profileId/public - public profile view
 router.get('/:profileId/public', requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({
-    where: { profileId: req.params.profileId },
+    where: { profileId: req.params.profileId } as any,
     select: {
       id: true,
       displayName: true,
