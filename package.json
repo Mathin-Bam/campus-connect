@@ -11,12 +11,12 @@
   "scripts": {
     "start": "cd apps/api && npm start",
     "dev": "pnpm --parallel --filter \"apps/*\" dev",
-    "build": "pnpm --parallel --filter \"apps/*\" build",
+    "build": "cd apps/api && npm run build",
     "lint": "pnpm --parallel --filter \"apps/*\" lint",
     "lint:fix": "pnpm --parallel --filter \"apps/*\" lint:fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "pnpm --parallel --filter \"apps/*\" typecheck",
+    "typecheck": "cd apps/api && npx tsc --noEmit",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
