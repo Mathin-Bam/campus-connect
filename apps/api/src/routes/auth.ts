@@ -191,6 +191,7 @@ router.post('/login', async (req, res) => {
     await redis.set(otpKey, otp, { ex: 3600 });
 
     res.json({ message: 'OTP sent', otp, userId: user.id }); // otp visible in dev
+    return;
   } catch (e: any) {
     res.status(500).json({ error: e.message });
     return;
