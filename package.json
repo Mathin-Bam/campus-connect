@@ -9,6 +9,7 @@
     "apps/*"
   ],
   "scripts": {
+    "start": "cd apps/api && npm start",
     "dev": "pnpm --parallel --filter \"apps/*\" dev",
     "build": "pnpm --parallel --filter \"apps/*\" build",
     "lint": "pnpm --parallel --filter \"apps/*\" lint",
