@@ -54,7 +54,7 @@ export default function ProfileDropdown({ visible, onClose, navigation }: Props)
               <Text style={s.profileName}>{profile?.displayName || user?.displayName || 'User'}</Text>
               <Text style={s.profileEmail}>{profile?.email || user?.email || ''}</Text>
               <View style={s.profileIdBadge}>
-                <Text style={s.profileIdText}>#{(profile?.profileId?.slice(-8) || '--------'}</Text>
+                <Text style={s.profileIdText}>#{(profile?.profileId?.slice(-8) ?? '--------')}</Text>
               </View>
             </View>
           </View>

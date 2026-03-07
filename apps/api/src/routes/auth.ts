@@ -193,6 +193,7 @@ router.post('/login', async (req, res) => {
     res.json({ message: 'OTP sent', otp, userId: user.id }); // otp visible in dev
   } catch (e: any) {
     res.status(500).json({ error: e.message });
+    return;
   }
 });
 

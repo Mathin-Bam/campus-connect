@@ -30,8 +30,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     next();
   } catch (e: any) {
     if (e.code === 'auth/id-token-expired') {
-      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+      res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+      return;
     }
-    return res.status(401).json({ error: 'Invalid token' });
+    res.status(401).json({ error: 'Invalid token' });
+    return;
   }
 }

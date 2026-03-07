@@ -18,6 +18,7 @@ router.post('/set-password', requireAuth, async (req, res) => {
     res.json({ message: 'Password set successfully' });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
+    return;
   }
 });
 
