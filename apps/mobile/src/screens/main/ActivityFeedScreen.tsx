@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { io, Socket } from 'socket.io-client';
 import SimpleStatusSheet from '../../components/StatusBottomSheet';
 import { API_URL } from '../../config/api';
+import { useAuth } from '../../context/AuthContext';
 
 const FILTERS = [
   { id: 'all', label: 'All', emoji: '⚡' },
@@ -29,12 +30,11 @@ const FILTERS = [
 ];
 
 export default function ActivityFeedScreen() {
+  const { token: userToken, user: currentUser } = useAuth();
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [statusVisible, setStatusVisible] = useState(false);
   const [feedItems, setFeedItems] = useState<any[]>([]);
-  const [userToken, setUserToken] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const navigation = useNavigation();
 

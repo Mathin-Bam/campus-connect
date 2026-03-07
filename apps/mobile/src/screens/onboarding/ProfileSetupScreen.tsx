@@ -17,6 +17,8 @@ import * as Haptics from 'expo-haptics';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation';
+import { API_URL } from '../../config/api';
+import { useAuth } from '../../context/AuthContext';
 
 type Props = {
   navigation: StackNavigationProp<RootStackParamList, 'ProfileSetup'>;
@@ -37,10 +39,12 @@ const ACTIVITIES = [
 ];
 
 export default function ProfileSetupScreen({ navigation, route }: Props) {
-  const { email } = route.params;
+  const { userId, email, token } = route.params;
+  const { setAuth } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [avatarInitials, setAvatarInitials] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const btnScale = useRef(new Animated.Value(1)).current;
@@ -99,9 +103,42 @@ export default function ProfileSetupScreen({ navigation, route }: Props) {
   };
 
   const handleLetsGo = async () => {
-    if (!displayName.trim()) return;
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    navigation.navigate('MainTabs');
+    if (!displayName.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      // Update profile via API
+      const response = await fetch(`${API_URL}/api/users/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ displayName: displayName.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const data = await response.json();
+      
+      // Set auth context - this will automatically navigate to main screens
+      setAuth({
+        id: userId,
+        email,
+        displayName: displayName.trim(),
+        universityId: data.user?.universityId || '',
+        verified: true,
+      }, token);
+      
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Profile setup error:', error);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const pressIn = () =>

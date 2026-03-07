@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useAuth } from '../context/AuthContext';
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import UniversitySearchScreen from '../screens/onboarding/UniversitySearchScreen';
 import OTPScreen from '../screens/onboarding/OTPScreen';
@@ -23,8 +24,9 @@ export type RootStackParamList = {
   ProfileSetup: {
     userId: string;
     email: string;
+    token: string;
   };
-  MainTabs: undefined;
+  ActivityFeed: undefined;
   ChatList: undefined;
   MessageScreen: {
     threadId: string;
@@ -36,39 +38,28 @@ export type RootStackParamList = {
   };
 };
 
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator();
 
-const linking = {
-  prefixes: ['http://localhost:8081', 'https://campus-connect.app'],
-  config: {
-    screens: {
-      Welcome: '',
-      UniversitySearch: 'university',
-      OTP: 'otp',
-      ProfileSetup: 'profile',
-      MainTabs: 'feed',
-      ChatList: 'chats',
-      MessageScreen: 'chat/:threadId',
-    },
-  },
-};
 
-export default function Navigation() {
+export default function AppNavigator() {
+  const { user } = useAuth();
   return (
-    <NavigationContainer linking={linking}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: '#0D2137' },
-        }}
-      >
-        <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="UniversitySearch" component={UniversitySearchScreen} />
-        <Stack.Screen name="OTP" component={OTPScreen} />
-        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-        <Stack.Screen name="MainTabs" component={ActivityFeedScreen} />
-        <Stack.Screen name="ChatList" component={ChatListScreen} />
-        <Stack.Screen name="MessageScreen" component={MessageScreen} />
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!user ? (
+          <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="UniversitySearch" component={UniversitySearchScreen} />
+            <Stack.Screen name="OTP" component={OTPScreen} />
+            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="ActivityFeed" component={ActivityFeedScreen} />
+            <Stack.Screen name="ChatList" component={ChatListScreen} />
+            <Stack.Screen name="MessageScreen" component={MessageScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

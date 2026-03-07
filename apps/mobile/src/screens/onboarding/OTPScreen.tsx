@@ -35,6 +35,7 @@ export default function OTPScreen({ navigation, route }: Props) {
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [isVerifying, setIsVerifying] = useState(false);
   const [otpError, setOtpError] = useState(false);
+  const [devOtp, setDevOtp] = useState<string>(''); // For dev testing display
 
   const otpRefs = useRef<(TextInput | null)[]>([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -108,6 +109,8 @@ export default function OTPScreen({ navigation, route }: Props) {
         throw new Error(error.error || 'Failed to send OTP');
       }
       
+      const data = await response.json();
+      setDevOtp(data.otp || ''); // Store OTP for dev display
       setStep('otp');
       startCountdown();
       setTimeout(() => otpRefs.current[0]?.focus(), 300);
@@ -184,6 +187,7 @@ export default function OTPScreen({ navigation, route }: Props) {
         navigation.navigate('ProfileSetup' as never, {
           userId: data.userId || data.uid || 'unknown',
           email: email,
+          token: data.customToken || data.token || '',
         });
       } else {
         throw new Error(data.error || 'Verification failed');
@@ -382,6 +386,13 @@ export default function OTPScreen({ navigation, route }: Props) {
                     </Text>
                   </TouchableOpacity>
                 </View>
+
+                {/* Dev OTP Display */}
+                {devOtp ? (
+                  <View style={s.devHint}>
+                    <Text style={s.devHintText}>📱 Dev OTP: {devOtp}</Text>
+                  </View>
+                ) : null}
 
               </View>
             )}
