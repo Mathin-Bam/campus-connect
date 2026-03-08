@@ -9,6 +9,7 @@ import {
   StatusBar,
   RefreshControl,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,6 +35,8 @@ export default function ActivityFeedScreen({ navigation }: any) {
   const { idToken, user: currentUser } = useAuth();
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [activeCount, setActiveCount] = useState<number | null>(null);
   const [statusVisible, setStatusVisible] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [feedItems, setFeedItems] = useState<any[]>([
@@ -111,19 +114,29 @@ export default function ActivityFeedScreen({ navigation }: any) {
     },
   ]);
 
-  // Fetch feed from API
-  const fetchFeed = async () => {
-    if (!idToken) return;
-    
+  const fetchActiveCount = async () => {
+  try {
+    const data = await apiFetch('/api/activity/active-count');
+    setActiveCount(data.count);
+  } catch (e) {}
+};
+
+// Fetch feed from API
+const fetchFeed = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('https://campus-connect-api-kq3u.onrender.com/api/activity/feed', {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-      const data = await res.json();
-      const items = Array.isArray(data.feed) ? data.feed : Array.isArray(data) ? data : [];
-      if (items.length > 0) setFeedItems(items); // only replace mock if real data exists
-    } catch (e) {
-      // keep mock data on error — this is intentional
+      const data = await apiFetch('/api/activity/feed');
+      const realItems = Array.isArray(data) ? data : Array.isArray(data?.feed) ? data.feed : [];
+      console.log('REAL API ITEMS:', realItems.length);
+      // Real items first, mock items after — filtered so mock doesn't duplicate real users
+      const combined = [...realItems, ...feedItems];
+      setFeedItems(combined);
+      fetchActiveCount(); // Update count after fetching feed
+    } catch (e: any) {
+      console.log('Feed fetch error:', e.message);
+      // Keep existing mock data on error
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,28 +169,24 @@ export default function ActivityFeedScreen({ navigation }: any) {
 
   useEffect(() => {
     fetchFeed();
+    fetchActiveCount();
   }, [idToken]);
 
-  const handleSayHi = async (targetUserId: string, targetUserName: string) => {
-    console.log('SAY HI - targetUserId:', targetUserId);
-    if (!targetUserId) { 
-      console.log('No targetUserId'); 
-      return; 
-    }
-    try {
-      const data = await apiFetch('/api/chat/initiate', {
-        method: 'POST',
-        body: JSON.stringify({ targetUserId }),
-      });
-      const params = {
-        threadId: data.thread?.id || data.threadId,
-        otherUser: { id: targetUserId, displayName: targetUserName },
-      };
-      (navigation.navigate as any)('MessageScreen', params);
-    } catch (e: any) {
-      console.log('Chat initiate error:', e.message);
-    }
-  };
+  const handleSayHi = async (targetUserId: string, targetName: string) => {
+  if (!targetUserId) return;
+  try {
+    const data = await apiFetch('/api/chat/initiate', {
+      method: 'POST',
+      body: JSON.stringify({ targetUserId }),
+    });
+    navigation.navigate('MessageScreen', {
+      threadId: data.threadId || data.thread?.id,
+      otherUser: { id: targetUserId, displayName: targetName },
+    });
+  } catch (e: any) {
+    Alert.alert('Error', e.message);
+  }
+};
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const fabScale = useRef(new Animated.Value(1)).current;
@@ -238,7 +247,7 @@ export default function ActivityFeedScreen({ navigation }: any) {
           <View>
             <Text style={s.greeting}>Hey there 👋</Text>
             <Text style={s.subGreeting}>
-              <Text style={s.liveCount}>● {feedItems.length} people</Text>
+              <Text style={s.liveCount}>● {activeCount !== null ? activeCount : '—'} people</Text>
               {' '}active on campus
             </Text>
           </View>
@@ -341,7 +350,7 @@ export default function ActivityFeedScreen({ navigation }: any) {
         onClose={() => setStatusVisible(false)}
         onPosted={() => {
           setStatusVisible(false);
-          setTimeout(() => fetchFeed(), 500); // refresh feed after post
+          fetchFeed(); // This will also refresh active count
         }}
       />
     </View>
@@ -460,17 +469,19 @@ function ActivityCard({ item, index, onSayHi }: {
 
             {/* Join button */}
             <View style={s.cardFooter}>
-              <TouchableOpacity 
-                style={[s.joinBtn, { borderColor: item.color + '66' }]}
-                onPress={() => onSayHi(
-                  item.user?.id || item.userId || 'unknown', 
-                  item.user?.displayName || item.name || 'Unknown'
-                )}
-              >
-                <Text style={[s.joinBtnText, { color: item.color }]}>
-                  Say hi 👋
-                </Text>
-              </TouchableOpacity>
+              {item.userId && (
+                <TouchableOpacity 
+                  style={[s.joinBtn, { borderColor: item.color + '66' }]}
+                  onPress={() => onSayHi(
+                    item.user?.id || item.userId || 'unknown', 
+                    item.user?.displayName || item.name || 'Unknown'
+                  )}
+                >
+                  <Text style={[s.joinBtnText, { color: item.color }]}>
+                    Say hi 👋
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>

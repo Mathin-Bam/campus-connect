@@ -67,13 +67,16 @@ export default function StatusBottomSheet({ isVisible, onClose, onPosted }: Prop
     setLoading(true);
     setError('');
     try {
+      const activity = ACTIVITIES.find(a => a.id === selectedActivity)!;
       await apiFetch('/api/activity/status', {
         method: 'POST',
         body: JSON.stringify({
-          activityType: selectedActivity,
+          activityId: selectedActivity,
+          label: activity.label,
+          emoji: activity.emoji,
           location: location.trim() || null,
           message: message.trim() || null,
-          duration: selectedDuration || '1h',
+          duration: 60,
         }),
       });
       setSelectedActivity('');

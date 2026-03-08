@@ -63,7 +63,9 @@ model ActivityStatus {
   id               String    @id @default(uuid())
   userId           String    @map("user_id")
   universityId     String    @map("university_id")
-  activityType     String    @map("activity_type")
+  activityId       String    @map("activity_id")
+  label            String
+  emoji            String?
   locationName     String    @map("location_name")
   message          String?   @db.VarChar(120)
   expiresAt        DateTime  @map("expires_at")
@@ -72,7 +74,7 @@ model ActivityStatus {
   university       University @relation(fields: [universityId], references: [id])
 
   @@index([userId, expiresAt])
-  @@index([activityType, expiresAt])
+  @@index([activityId, expiresAt])
   @@map("activity_statuses")
 }
 

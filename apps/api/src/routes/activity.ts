@@ -7,53 +7,35 @@ const router: Router = Router();
 // POST /api/activity/status
 router.post('/status', requireAuth, async (req, res) => {
   try {
-    const { activityType, location, message, duration } = req.body;
-    const user = req.user!;
-
-    const durationMap: Record<string, number> = {
-      '30m': 30, '1h': 60, '2h': 120, 'open': 99999
-    };
-    const minutes = durationMap[duration] ?? 60;
-    const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
-
-    // Delete any existing activity status for this user
-    await prisma.activityStatus.deleteMany({
-      where: { userId: user.id }
-    });
-
-    const activityStatus = await prisma.activityStatus.create({
-      data: {
-        userId: user.id,
-        universityId: user.universityId,
-        activityType,
-        locationName: location,
-        message,
-        expiresAt,
-      },
-      include: {
-        user: {
-          select: { id: true, displayName: true, avatarUrl: true }
-        }
-      }
-    });
-
-    // Emit Socket.io event to the user's university room
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`university_${user.universityId}`).emit('status_updated', {
-        userId: user.id,
-        displayName: user.displayName,
-        activityType,
-        location,
-        message,
-        expiresAt
-      });
+    const { activityId, label, emoji, location, message, duration } = req.body;
+    const userId = (req as any).user.id;
+    const universityId = (req as any).user.universityId;
+    if (!activityId || !label) {
+      res.status(400).json({ error: 'activityId and label required' });
+      return;
     }
-
-    res.json(activityStatus);
-  } catch (error) {
-    console.error('Status creation error:', error);
-    res.status(500).json({ error: 'Failed to create status' });
+    
+    // Replace existing status
+    await prisma.activityStatus.deleteMany({ where: { userId } });
+    
+    const status = await prisma.activityStatus.create({
+      data: {
+        userId,
+        universityId,
+        activityId: activityId as any,
+        label,
+        emoji: emoji || '📍',
+        locationName: location || null,
+        message: message || null,
+        expiresAt: new Date(Date.now() + (Number(duration) || 60) * 60 * 1000),
+      } as any,
+    });
+    
+    res.json({ status });
+    return;
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+    return;
   }
 });
 
@@ -84,34 +66,56 @@ router.delete('/status', requireAuth, async (req, res) => {
 // GET /api/activity/feed
 router.get('/feed', requireAuth, async (req, res) => {
   try {
-    const user = req.user!;
-
+    const user = (req as any).user;
     const statuses = await prisma.activityStatus.findMany({
       where: {
-        universityId: user.universityId,
         expiresAt: { gt: new Date() },
+        user: { universityId: user.universityId },
       },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
       include: {
-        user: {
-          select: { id: true, displayName: true, avatarUrl: true }
-        }
+        user: { select: { id: true, displayName: true, avatarUrl: true } },
       },
-      orderBy: { createdAt: 'desc' }
     });
 
-    // Filter out current user and ensure flat userId field
-    const filteredStatuses = statuses
-      .filter((status: any) => status.user.id !== user.id)
-      .map((status: any) => ({
-        ...status,
-        userId: status.user.id, // ensure flat field exists
-        userName: status.user.displayName,
-      }));
+    const feed = statuses.map((s: any) => ({
+      id: s.id,
+      userId: s.userId,   // real UUID — this is what Say Hi uses
+      name: s.user.displayName || 'User',
+      initials: (s.user.displayName || 'U')
+        .split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2),
+      activity: s.label,
+      activityId: s.activityId,
+      emoji: s.emoji || '📍',
+      location: s.locationName || '',
+      message: s.message || '',
+      minutesAgo: Math.floor((Date.now() - new Date(s.createdAt).getTime()) / 60000),
+      color: ({
+        study:'#3498DB', gym:'#8E44AD', food:'#F39C12',
+        sports:'#E74C3C', gaming:'#E67E22', social:'#1ABC9C',
+        music:'#9B59B6', art:'#2ECC71', movies:'#E91E63', other:'#607D8B',
+      } as any)[s.activityId] || '#1B6CA8',
+    }));
 
-    res.json({ feed: filteredStatuses });
-  } catch (error) {
-    console.error('Feed fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch feed' });
+    res.json(feed);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/activity/active-count
+router.get('/active-count', requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const count = await prisma.activityStatus.count({
+      where: { expiresAt: { gt: new Date() }, user: { universityId: user.universityId } },
+    });
+    res.json({ count });
+    return;
+  } catch (e: any) { 
+    res.status(500).json({ error: e.message });
+    return;
   }
 });
 
