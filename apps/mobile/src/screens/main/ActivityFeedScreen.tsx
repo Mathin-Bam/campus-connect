@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { io, Socket } from 'socket.io-client';
-import SimpleStatusSheet from '../../components/StatusBottomSheet';
+import StatusBottomSheet from '../../components/StatusBottomSheet';
 import ProfileDropdown from '../../components/ProfileDropdown';
 import { API_URL } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
@@ -159,6 +159,7 @@ export default function ActivityFeedScreen({ navigation }: any) {
   }, [idToken]);
 
   const handleSayHi = async (targetUserId: string, targetUserName: string) => {
+    console.log('SAY HI - targetUserId:', targetUserId);
     if (!targetUserId) { 
       console.log('No targetUserId'); 
       return; 
@@ -221,11 +222,6 @@ export default function ActivityFeedScreen({ navigation }: any) {
     setStatusVisible(true);
   };
 
-  const handleStatusSubmit = (status: any) => {
-    console.log('Status set:', status);
-    setStatusVisible(false);
-  };
-
   return (
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -285,7 +281,7 @@ export default function ActivityFeedScreen({ navigation }: any) {
           data={filtered}
           keyExtractor={item => item.id}
           renderItem={({ item, index }) => {
-            console.log('FEED ITEM:', JSON.stringify(item, null, 2));
+            console.log('FEED ITEM SHAPE:', JSON.stringify(item).slice(0, 300));
             return <ActivityCard item={item} index={index} onSayHi={handleSayHi} />;
           }}
           showsVerticalScrollIndicator={false}
@@ -340,10 +336,13 @@ export default function ActivityFeedScreen({ navigation }: any) {
       </Animated.View>
 
       {/* Status Sheet */}
-      <SimpleStatusSheet
+      <StatusBottomSheet
         isVisible={statusVisible}
         onClose={() => setStatusVisible(false)}
-        onSubmit={handleStatusSubmit}
+        onPosted={() => {
+          setStatusVisible(false);
+          setTimeout(() => fetchFeed(), 500); // refresh feed after post
+        }}
       />
     </View>
   );

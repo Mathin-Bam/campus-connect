@@ -1,5 +1,5 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyA11352OymoEZA8e2nJu_Ur9SodBI_uthA",
@@ -10,12 +10,7 @@ const firebaseConfig = {
   appId: "1:1015664532865:web:e100711cd4770f933bdc80",
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-
-// Set persistence to local storage (will work in React Native)
-setPersistence(auth, browserLocalPersistence).catch(() => {
-  // Ignore errors if persistence is already set
-});
 
 export default app;

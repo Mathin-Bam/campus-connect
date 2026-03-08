@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Animated, Modal, Dimensions, KeyboardAvoidingView, Platform,
+  ScrollView, Animated, Modal, Dimensions, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { apiFetch } from '../config/apiClient';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,22 +32,17 @@ const DURATIONS = [
 type Props = {
   isVisible: boolean;
   onClose: () => void;
-  onSubmit: (status: {
-    activityId: string;
-    emoji: string;
-    label: string;
-    location: string;
-    message: string;
-    duration: string;
-  }) => void;
+  onPosted?: () => void;
 };
 
-export default function StatusBottomSheet({ isVisible, onClose, onSubmit }: Props) {
+export default function StatusBottomSheet({ isVisible, onClose, onPosted }: Props) {
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const [selectedActivity, setSelectedActivity] = useState('');
   const [location, setLocation] = useState('');
   const [message, setMessage] = useState('');
   const [selectedDuration, setSelectedDuration] = useState('1h');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (isVisible) {
@@ -66,14 +62,31 @@ export default function StatusBottomSheet({ isVisible, onClose, onSubmit }: Prop
     setSelectedActivity(id);
   };
 
-  const handleSubmit = async () => {
+  const handlePost = async () => {
     if (!selectedActivity) return;
-    const activity = ACTIVITIES.find(a => a.id === selectedActivity)!;
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onSubmit({ activityId: selectedActivity, emoji: activity.emoji,
-      label: activity.label, location, message, duration: selectedDuration });
-    setSelectedActivity(''); setLocation(''); setMessage(''); setSelectedDuration('1h');
-    onClose();
+    setLoading(true);
+    setError('');
+    try {
+      await apiFetch('/api/activity/status', {
+        method: 'POST',
+        body: JSON.stringify({
+          activityType: selectedActivity,
+          location: location.trim() || null,
+          message: message.trim() || null,
+          duration: selectedDuration || '1h',
+        }),
+      });
+      setSelectedActivity('');
+      setLocation('');
+      setMessage('');
+      setSelectedDuration('1h');
+      onClose();
+      onPosted?.();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const selectedActivityData = ACTIVITIES.find(a => a.id === selectedActivity);
@@ -153,16 +166,21 @@ export default function StatusBottomSheet({ isVisible, onClose, onSubmit }: Prop
               })}
             </View>
 
-            <TouchableOpacity onPress={handleSubmit} disabled={!selectedActivity} style={{ marginTop: 24, marginBottom: 32 }}>
+            <TouchableOpacity onPress={handlePost} disabled={!selectedActivity || loading} style={{ marginTop: 24, marginBottom: 32 }}>
               <LinearGradient
                 colors={selectedActivity ? [selectedActivityData!.color, selectedActivityData!.color + 'AA'] : ['#1a2a3a', '#1a2a3a']}
                 style={s.submitBtn}
               >
-                <Text style={s.submitText}>
-                  {selectedActivity ? `I'm Active ${selectedActivityData?.emoji}` : 'Pick an activity first'}
-                </Text>
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={s.submitText}>
+                    {selectedActivity ? `I'm Active ${selectedActivityData?.emoji}` : 'Pick an activity first'}
+                  </Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
+            {error && <Text style={s.errorText}>{error}</Text>}
           </ScrollView>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -195,4 +213,5 @@ const s = StyleSheet.create({
   pillText: { fontSize: 13, color: 'rgba(174,214,241,0.5)', fontWeight: '600' },
   submitBtn: { height: 56, borderRadius: 999, justifyContent: 'center', alignItems: 'center' },
   submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  errorText: { fontSize: 12, color: '#E74C3C', textAlign: 'center', marginTop: 8 },
 });
