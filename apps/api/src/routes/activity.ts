@@ -96,6 +96,7 @@ router.delete('/status', requireAuth, async (req, res) => {
 router.get('/feed', requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
+    console.log('FEED - user:', user?.id, 'universityId:', user?.universityId);
     console.log('FEED REQUEST - userId:', user.id, 'universityId:', user.universityId);
     const statuses = await prisma.activityStatus.findMany({
       where: {
