@@ -101,8 +101,8 @@ importers:
   apps/mobile:
     dependencies:
       '@react-native-async-storage/async-storage':
-        specifier: ^3.0.1
-        version: 3.0.1(react-native@0.81.5)(react@19.1.0)
+        specifier: ^2.2.0
+        version: 2.2.0(react-native@0.81.5)
       '@react-navigation/bottom-tabs':
         specifier: ^6.6.1
         version: 6.6.1(@react-navigation/native@6.1.18)(react-native-safe-area-context@5.6.2)(react-native-screens@4.16.0)(react-native@0.81.5)(react@19.1.0)
@@ -144,7 +144,7 @@ importers:
         version: 2.0.1(react-native@0.81.5)(react@19.1.0)
       firebase:
         specifier: ^12.10.0
-        version: 12.10.0(@react-native-async-storage/async-storage@3.0.1)
+        version: 12.10.0(@react-native-async-storage/async-storage@2.2.0)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -2744,14 +2744,14 @@ packages:
       tslib: 2.8.1
     dev: false
 
-  /@firebase/auth-compat@0.6.3(@firebase/app-compat@0.5.9)(@firebase/app-types@0.9.3)(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@3.0.1):
+  /@firebase/auth-compat@0.6.3(@firebase/app-compat@0.5.9)(@firebase/app-types@0.9.3)(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@2.2.0):
     resolution: {integrity: sha512-nHOkupcYuGVxI1AJJ/OBhLPaRokbP14Gq4nkkoVvf1yvuREEWqdnrYB/CdsSnPxHMAnn5wJIKngxBF9jNX7s/Q==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@firebase/app-compat': 0.x
     dependencies:
       '@firebase/app-compat': 0.5.9
-      '@firebase/auth': 1.12.1(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@3.0.1)
+      '@firebase/auth': 1.12.1(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@2.2.0)
       '@firebase/auth-types': 0.13.0(@firebase/app-types@0.9.3)(@firebase/util@1.14.0)
       '@firebase/component': 0.7.1
       '@firebase/util': 1.14.0
@@ -2776,7 +2776,7 @@ packages:
       '@firebase/util': 1.14.0
     dev: false
 
-  /@firebase/auth@1.12.1(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@3.0.1):
+  /@firebase/auth@1.12.1(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@2.2.0):
     resolution: {integrity: sha512-nXKj7d5bMBlnq6XpcQQpmnSVwEeHBkoVbY/+Wk0P1ebLSICoH4XPtvKOFlXKfIHmcS84mLQ99fk3njlDGKSDtw==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
@@ -2790,7 +2790,7 @@ packages:
       '@firebase/component': 0.7.1
       '@firebase/logger': 0.5.0
       '@firebase/util': 1.14.0
-      '@react-native-async-storage/async-storage': 3.0.1(react-native@0.81.5)(react@19.1.0)
+      '@react-native-async-storage/async-storage': 2.2.0(react-native@0.81.5)
       tslib: 2.8.1
     dev: false
 
@@ -3559,14 +3559,12 @@ packages:
     requiresBuild: true
     dev: false
 
-  /@react-native-async-storage/async-storage@3.0.1(react-native@0.81.5)(react@19.1.0):
-    resolution: {integrity: sha512-VHwHb19sMg4Xh3W5M6YmJ/HSm1uh8RYFa6Dozm9o/jVYTYUgz2BmDXqXF7sum3glQaR34/hlwVc94px1sSdC2A==}
+  /@react-native-async-storage/async-storage@2.2.0(react-native@0.81.5):
+    resolution: {integrity: sha512-gvRvjR5JAaUZF8tv2Kcq/Gbt3JHwbKFYfmb445rhOj6NUMx3qPLixmDx5pZAyb9at1bYvJ4/eTUipU5aki45xw==}
     peerDependencies:
-      react: '*'
-      react-native: '*'
+      react-native: ^0.0.0-0 || >=0.65 <1.0
     dependencies:
-      idb: 8.0.3
-      react: 19.1.0
+      merge-options: 3.0.4
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
     dev: false
 
@@ -6980,7 +6978,7 @@ packages:
       - supports-color
     dev: false
 
-  /firebase@12.10.0(@react-native-async-storage/async-storage@3.0.1):
+  /firebase@12.10.0(@react-native-async-storage/async-storage@2.2.0):
     resolution: {integrity: sha512-tAjHnEirksqWpa+NKDUSUMjulOnsTcsPC1X1rQ+gwPtjlhJS572na91CwaBXQJHXharIrfj7sw/okDkXOsphjA==}
     dependencies:
       '@firebase/ai': 2.9.0(@firebase/app-types@0.9.3)(@firebase/app@0.14.9)
@@ -6991,8 +6989,8 @@ packages:
       '@firebase/app-check-compat': 0.4.1(@firebase/app-compat@0.5.9)(@firebase/app@0.14.9)
       '@firebase/app-compat': 0.5.9
       '@firebase/app-types': 0.9.3
-      '@firebase/auth': 1.12.1(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@3.0.1)
-      '@firebase/auth-compat': 0.6.3(@firebase/app-compat@0.5.9)(@firebase/app-types@0.9.3)(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@3.0.1)
+      '@firebase/auth': 1.12.1(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@2.2.0)
+      '@firebase/auth-compat': 0.6.3(@firebase/app-compat@0.5.9)(@firebase/app-types@0.9.3)(@firebase/app@0.14.9)(@react-native-async-storage/async-storage@2.2.0)
       '@firebase/data-connect': 0.4.0(@firebase/app@0.14.9)
       '@firebase/database': 1.1.1
       '@firebase/database-compat': 2.1.1
@@ -7642,10 +7640,6 @@ packages:
     resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
     dev: false
 
-  /idb@8.0.3:
-    resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
-    dev: false
-
   /ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
     dev: false
@@ -7897,6 +7891,11 @@ packages:
   /is-path-inside@3.0.3:
     resolution: {integrity: sha512-Fd4gABb+ycGAmKou8eMftCupSir5lRxqf4aD/vd0cD2qc4HL07OjCeuHMr8Ro4CoMaeCKDB0/ECBOVWjTwUvPQ==}
     engines: {node: '>=8'}
+
+  /is-plain-obj@2.1.0:
+    resolution: {integrity: sha512-YWnfyRwxL/+SsrWYfOpUtz5b3YD+nyfkHvjbcanzk8zgyO4ASD67uVMRt8k5bM4lLMDnXfriRhOpemw+NfT1eA==}
+    engines: {node: '>=8'}
+    dev: false
 
   /is-plain-object@2.0.4:
     resolution: {integrity: sha512-h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==}
@@ -8612,6 +8611,13 @@ packages:
 
   /merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
+    dev: false
+
+  /merge-options@3.0.4:
+    resolution: {integrity: sha512-2Sug1+knBjkaMsMgf1ctR1Ujx+Ayku4EdJN4Z+C2+JzoeF7A3OZ9KM2GY0CpQS51NR61LTurMJrRKPhSs3ZRTQ==}
+    engines: {node: '>=10'}
+    dependencies:
+      is-plain-obj: 2.1.0
     dev: false
 
   /merge-stream@2.0.0:
