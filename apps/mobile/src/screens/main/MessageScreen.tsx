@@ -48,6 +48,14 @@ export default function MessageScreen() {
   const { threadId, otherUser } = route.params as RouteParams;
   const { idToken, user } = useAuth();
   
+  if (!otherUser) {
+    return (
+      <View style={s.loadingContainer}>
+        <Text style={s.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+  
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -169,6 +177,24 @@ export default function MessageScreen() {
 
   return (
     <SafeAreaView style={s.container}>
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <Text style={s.backArrow}>←</Text>
+        </TouchableOpacity>
+        <View style={s.headerInfo}>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>
+              {(otherUser?.displayName ?? 'U')[0]?.toUpperCase() ?? ''}
+            </Text>
+          </View>
+          <View>
+            <Text style={s.headerName}>{otherUser?.displayName ?? 'Chat'}</Text>
+            <Text style={s.headerSub}>Campus Connect</Text>
+          </View>
+        </View>
+      </View>
+
       <KeyboardAvoidingView
         style={s.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -222,10 +248,62 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0A1929',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#1B6CA8',
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(27,108,168,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backArrow: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    lineHeight: 24,
+  },
+  headerInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0D3060',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  headerName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  headerSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#FFFFFF',
   },
   messagesList: {
     flex: 1,

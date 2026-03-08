@@ -4,12 +4,12 @@ import { requireAuth } from '../middleware/requireAuth';
 
 const router: Router = Router();
 
-// POST /api/activity/status
 router.post('/status', requireAuth, async (req, res) => {
   try {
     const { activityId, label, emoji, location, message, duration } = req.body;
     const userId = (req as any).user.id;
     const universityId = (req as any).user.universityId;
+    const displayName = (req as any).user.displayName;
     if (!activityId || !label) {
       res.status(400).json({ error: 'activityId and label required' });
       return;
@@ -31,6 +31,28 @@ router.post('/status', requireAuth, async (req, res) => {
       } as any,
     });
     
+    // Emit Socket.io event to user's university room
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`university_${universityId}`).emit('status_updated', {
+        userId: userId,
+        displayName: displayName,
+        activityId: activityId,
+        location,
+        message,
+        expiresAt: status.expiresAt
+      });
+
+      // Emit active count update
+      const activeCount = await prisma.activityStatus.count({
+        where: { expiresAt: { gt: new Date() }, user: { universityId: universityId } },
+      });
+      io.to(`university_${universityId}`).emit('active_count', { count: activeCount });
+
+      // Emit new status event
+      io.to(`university_${universityId}`).emit('new_status', { status });
+    }
+    
     res.json({ status });
     return;
   } catch (e: any) {
@@ -43,6 +65,7 @@ router.post('/status', requireAuth, async (req, res) => {
 router.delete('/status', requireAuth, async (req, res) => {
   try {
     const user = req.user!;
+    const universityId = user.universityId;
 
     await prisma.activityStatus.deleteMany({
       where: { userId: user.id }
@@ -51,9 +74,15 @@ router.delete('/status', requireAuth, async (req, res) => {
     // Emit status cleared event
     const io = req.app.get('io');
     if (io) {
-      io.to(`university_${user.universityId}`).emit('status_cleared', { 
+      io.to(`university_${universityId}`).emit('status_cleared', { 
         userId: user.id 
       });
+
+      // Emit active count update
+      const activeCount = await prisma.activityStatus.count({
+        where: { expiresAt: { gt: new Date() }, user: { universityId: universityId } },
+      });
+      io.to(`university_${universityId}`).emit('active_count', { count: activeCount });
     }
 
     res.json({ success: true });
@@ -67,10 +96,11 @@ router.delete('/status', requireAuth, async (req, res) => {
 router.get('/feed', requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
+    console.log('FEED REQUEST - userId:', user.id, 'universityId:', user.universityId);
     const statuses = await prisma.activityStatus.findMany({
       where: {
         expiresAt: { gt: new Date() },
-        user: { universityId: user.universityId },
+        ...(user.universityId ? { user: { universityId: user.universityId } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -78,6 +108,7 @@ router.get('/feed', requireAuth, async (req, res) => {
         user: { select: { id: true, displayName: true, avatarUrl: true } },
       },
     });
+    console.log('FEED RESULTS COUNT:', statuses.length);
 
     const feed = statuses.map((s: any) => ({
       id: s.id,

@@ -36,7 +36,7 @@ export default function ActivityFeedScreen({ navigation }: any) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [activeCount, setActiveCount] = useState<number | null>(null);
+  const [activeCount, setActiveCount] = useState(6);
   const [statusVisible, setStatusVisible] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [feedItems, setFeedItems] = useState<any[]>([
@@ -117,8 +117,10 @@ export default function ActivityFeedScreen({ navigation }: any) {
   const fetchActiveCount = async () => {
   try {
     const data = await apiFetch('/api/activity/active-count');
-    setActiveCount(data.count);
-  } catch (e) {}
+    setActiveCount(6 + (data.count || 0)); // 6 mock + real active users
+  } catch {
+    setActiveCount(6); // fallback to mock baseline
+  }
 };
 
 // Fetch feed from API
@@ -160,6 +162,14 @@ const fetchFeed = async () => {
 
     socket.on('status_cleared', ({ userId }) => {
       setFeedItems(prev => prev.filter(i => i.userId !== userId));
+    });
+
+    socket.on('active_count', (data: { count: number }) => {
+      setActiveCount(6 + data.count); // 6 mock + real
+    });
+
+    socket.on('new_status', () => {
+      fetchFeed(); // auto-refresh feed when anyone posts
     });
 
     return () => {
