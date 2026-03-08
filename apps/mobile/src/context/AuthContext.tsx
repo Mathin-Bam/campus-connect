@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth } from '../config/firebase';
 import { signInWithCustomToken, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import storage from '../utils/storage';
 
 type AppUser = {
   id: string;
@@ -29,6 +30,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [idToken, setIdToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Restore cached user session on app start
+  useEffect(() => {
+    const restore = async () => {
+      try {
+        const cached = await storage.getItem('cc_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setUser(parsed); // show app immediately, Firebase will confirm
+        }
+      } catch {}
+    };
+    restore();
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
@@ -39,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFirebaseUser(null);
         setIdToken(null);
         setUser(null);
+        await storage.removeItem('cc_user'); // Clear cache on logout
       }
       setLoading(false);
     });
@@ -50,14 +66,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = await credential.user.getIdToken();
     setIdToken(token);
     setFirebaseUser(credential.user);
-    setUser({
+    
+    const userData = {
       id: userId,
       email,
       displayName: '',
       universityId,
       verified: true,
       firebaseUid: credential.user.uid,
-    });
+    };
+    
+    setUser(userData);
+    // Save user data to storage for instant app loads
+    await storage.setItem('cc_user', JSON.stringify(userData));
   };
 
   const updateUser = (updates: Partial<AppUser>) => {
